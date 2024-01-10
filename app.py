@@ -53,9 +53,7 @@ def get_peer_message_throughput():
                          visualmap_opts=opts.VisualMapOpts(),
                          datazoom_opts=[
                              opts.DataZoomOpts(range_start=0, range_end=100),
-                             opts.DataZoomOpts(type_="inside", range_start=0, range_end=100),
                          ],
-                         axispointer_opts=opts.AxisPointerOpts(is_show=True),
                          xaxis_opts=opts.AxisOpts(name="测量时刻"),
                          yaxis_opts=opts.AxisOpts(name="消息大小"),
                          legend_opts=opts.LegendOpts(pos_left="center"),
@@ -71,7 +69,6 @@ def get_peer_message_throughput():
                          toolbox_opts=opts.ToolboxOpts(),
                          datazoom_opts=[
                              opts.DataZoomOpts(range_start=0, range_end=100),
-                             opts.DataZoomOpts(type_="inside", range_start=0, range_end=100),
                          ],
                          xaxis_opts=opts.AxisOpts(name="测量时刻"),
                          yaxis_opts=opts.AxisOpts(name="消息大小"),
@@ -127,7 +124,6 @@ def get_net_p2p_transmission_latency():
                          datazoom_opts=[
                              opts.DataZoomOpts(range_start=0, range_end=100),
                          ],
-                         axispointer_opts=opts.AxisPointerOpts(is_show=True),
                          xaxis_opts=opts.AxisOpts(name="接收消息节点ID"),
                          yaxis_opts=opts.AxisOpts(name="平均传输时间/s"),
                          legend_opts=opts.LegendOpts(pos_left="center"),
@@ -139,6 +135,57 @@ def get_net_p2p_transmission_latency():
     return render_template('draw.html', chart=chart, chart_js=chart_js)
 
 # --数据层--
+# 数据库写入速率
+@app.route("/DBStateWriteRate")
+def get_db_state_write_rate():
+    filename = "db_state_write_rate.csv"
+    # 读取csv文件
+    df = pd.read_csv(filepath + filename)
+
+    # 使用loc选择特定列
+    new_df = df.loc[:, ['block_height', 'block_hash', 'write_duration']]
+    # 去掉'write_duration'列中的's'
+    new_df.loc[:, 'write_duration'] = new_df.loc[:, 'write_duration'].str.replace('s', '')
+    # 在'block_hash'列前添加'0x'
+    new_df.loc[:, 'block_hash'] = new_df.loc[:, 'block_hash'].apply(lambda x: '0x' + str(x))
+    # 重命名'write_duration'列为'value'
+    new_df.rename(columns={'write_duration': 'value'}, inplace=True)
+    # 将新的DataFrame转换为字典列表
+    data = new_df.to_dict('records')
+
+    bar = (
+        Bar()
+        .add_xaxis(new_df['block_height'].tolist())
+        .add_yaxis(series_name="写入耗时", y_axis=data)
+        .set_global_opts(title_opts=opts.TitleOpts(title="数据库写入速率"),
+                         toolbox_opts=opts.ToolboxOpts(),
+                         visualmap_opts=opts.VisualMapOpts(),
+                         datazoom_opts=[
+                             opts.DataZoomOpts(range_start=40, range_end=60),
+                         ],
+                         xaxis_opts=opts.AxisOpts(name="区块高度"),
+                         yaxis_opts=opts.AxisOpts(name="写入耗时/s"),
+                         legend_opts=opts.LegendOpts(pos_left="center"),
+                         tooltip_opts=opts.TooltipOpts(
+                             formatter=JsCode(
+                                 """
+                                 function (params) {
+                                     console.log(params);
+                                     return '区块哈希:'+ params.data.block_hash ;
+                                 }
+                                 """
+                             )
+                         ),
+                         )
+    )
+
+
+
+    chart,chart_js = parse_html(bar.render_embed())
+    return render_template('draw.html', chart = chart, chart_js = chart_js)
+
+# 数据库读取速率
+
 # --共识层--
 
 
@@ -171,7 +218,6 @@ def get_contract_time():
                          datazoom_opts=[
                              opts.DataZoomOpts(range_start=45, range_end=55),
                          ],
-                         axispointer_opts=opts.AxisPointerOpts(is_show=True),
                          xaxis_opts=opts.AxisOpts(name="开始执行时刻"),
                          yaxis_opts=opts.AxisOpts(name="执行时间/s"),
                          legend_opts=opts.LegendOpts(pos_left="center"),
