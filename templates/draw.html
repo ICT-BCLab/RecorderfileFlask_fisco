@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+
+{% block chart_div %}
+{{ chart | safe}}
+{% endblock %}
+
+
+{% block chart_script %}
+{{ chart_js | safe}}
+{% endblock %}

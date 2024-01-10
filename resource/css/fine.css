@@ -1,0 +1,65 @@
+﻿@charset "utf-8";
+.page-bg{
+    position: relative;
+    width: 100%;
+    height: 95vh;
+    background-color: rgb(233, 246, 248);
+    margin: 3px;
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    /*box-shadow:  1px 1px 9px 5px rgba(26, 26, 26, 0.2);*/
+    padding: 25px;
+}
+.panel-left{
+    background: transparent;
+    box-shadow:  1px 1px 15px 2px rgba(26, 26, 26, 0.13);
+    border-radius: 20px;
+    padding: 5px;
+    /*border: 1px solid black;*/
+    height: 90%;
+}
+.panel-right{
+    background: transparent;
+    /*box-shadow:  1px 1px 9px 5px rgba(26, 26, 26, 0.2);*/
+    border-radius: 20px;
+    padding: 10px;
+    /*border: 1px solid black;*/
+
+    height: 100%;
+}
+
+.edit-nav{
+    border-radius: 10px;
+    box-shadow:  1px 1px 15px 2px rgba(26, 26, 26, 0.13);
+}
+
+.panel-show{
+    width: 100%;
+    height: 75vh;
+    margin: 15px;
+    border-radius: 10px;
+    box-shadow:  1px 1px 15px 2px rgba(26, 26, 26, 0.13);
+}
+
+.panel-switch{
+}
+
+.panel-form{
+    width: 100%;
+    padding: 1px;
+    margin: 1px;
+    font-weight: bolder;
+    font-family: Consolas, monospace;
+    text-shadow: 3px 3px 5px rgba(0, 0, 0, 0.26);
+    color: #0b3a8a;
+}
+
+.panel-draw{
+    height: 100%;
+    width: 100%;
+    margin: 10px;
+    padding: 10px;
+}
