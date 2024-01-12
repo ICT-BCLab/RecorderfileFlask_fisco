@@ -2,14 +2,14 @@ import pandas as pd
 from flask import Flask, render_template
 
 from pyecharts import options as opts
-from pyecharts.charts import Bar,Line,Grid,Pie
+from pyecharts.charts import Bar, Line, Grid, Pie
 from pyecharts.commons.utils import JsCode
-from markupsafe import Markup
 from bs4 import BeautifulSoup
 
-app = Flask(__name__, template_folder='templates', static_folder='resource',static_url_path="/")
+app = Flask(__name__, template_folder='templates', static_folder='resource', static_url_path="/")
 
-filepath="/Users/bethestar/Downloads/myFiscoBcos/fisco/nodes/127.0.0.1/node0/log_record/"
+filepath = "/Users/bethestar/Downloads/myFiscoBcos/fisco/nodes/127.0.0.1/node0/log_record/"
+
 
 def parse_html(html_content):
     soup = BeautifulSoup(html_content, "html.parser")
@@ -18,12 +18,15 @@ def parse_html(html_content):
     chart = "<div class=\"panel-draw d-flex flex-column justify-content-center align-items-center\" id=\"" + chart_id + "\"></div>"
     return chart, chart_js
 
+
 def shorten_id(node_id):
-    return "0x"+node_id[:8]+"..."
+    return "0x" + node_id[:8] + "..."
+
 
 @app.route('/')
 def bigBoard():
     return render_template("base.html")
+
 
 # --网络层--
 # 节点收发消息总量
@@ -46,8 +49,8 @@ def get_peer_message_throughput():
     line1 = (
         Line()
         .add_xaxis(received_df['measure_time'].tolist())
-        .add_yaxis(series_name="P2P消息", y_axis=received_p2p["message_size"].tolist(),is_smooth=True)
-        .add_yaxis(series_name="Channel消息", y_axis=received_channel["message_size"].tolist(),is_smooth=True)
+        .add_yaxis(series_name="P2P消息", y_axis=received_p2p["message_size"].tolist(), is_smooth=True)
+        .add_yaxis(series_name="Channel消息", y_axis=received_channel["message_size"].tolist(), is_smooth=True)
         .set_global_opts(title_opts=opts.TitleOpts(title="节点收发消息总量-接收"),
                          toolbox_opts=opts.ToolboxOpts(),
                          visualmap_opts=opts.VisualMapOpts(),
@@ -65,25 +68,26 @@ def get_peer_message_throughput():
         .add_xaxis(sent_df['measure_time'].tolist())
         .add_yaxis(series_name="P2P消息", y_axis=sent_p2p["message_size"].tolist(), is_smooth=True)
         .add_yaxis(series_name="Channel消息", y_axis=sent_channel["message_size"].tolist(), is_smooth=True)
-        .set_global_opts(title_opts=opts.TitleOpts(title="节点收发消息总量-发送",pos_top="50%"),
+        .set_global_opts(title_opts=opts.TitleOpts(title="节点收发消息总量-发送", pos_top="50%"),
                          toolbox_opts=opts.ToolboxOpts(),
                          datazoom_opts=[
                              opts.DataZoomOpts(range_start=0, range_end=100),
                          ],
                          xaxis_opts=opts.AxisOpts(name="测量时刻"),
                          yaxis_opts=opts.AxisOpts(name="消息大小"),
-                         legend_opts=opts.LegendOpts(pos_left="center",pos_top="50%"),
+                         legend_opts=opts.LegendOpts(pos_left="center", pos_top="50%"),
                          )
     )
 
     grid = (
         Grid()
-        .add(chart=line1,grid_opts=opts.GridOpts(pos_bottom="60%"))
+        .add(chart=line1, grid_opts=opts.GridOpts(pos_bottom="60%"))
         .add(chart=line2, grid_opts=opts.GridOpts(pos_top="60%"))
     )
 
-    chart,chart_js = parse_html(grid.render_embed())
-    return render_template('draw.html', chart = chart, chart_js = chart_js)
+    chart, chart_js = parse_html(grid.render_embed())
+    return render_template('draw.html', chart=chart, chart_js=chart_js)
+
 
 # P2P网络平均传输时延
 @app.route("/NetP2PTransmissionLatency")
@@ -91,36 +95,34 @@ def get_net_p2p_transmission_latency():
     filename = "net_p2p_transmission_latency.csv"
     # 读取csv文件
     df = pd.read_csv(filepath + filename)
-
     # 取出send_id列的唯一值，后续作为标题
     send_id = df['send_id'].unique()[0]
-
     # 取出receive_id、duration两列
     df = df[['receive_id', 'duration']]
-
     # 去掉duration列末尾的's'
     df['duration'] = df['duration'].str.rstrip('s')
-
     # 将duration列转换为浮点数
     df['duration'] = df['duration'].astype(float)
-
     # recorderfile中在此处设置了3秒超时重传，所以要减去超时重传带来的误差（可能不止重传了1次）
     df['duration'] = df['duration'] - 3 * (df['duration'] // 3)
-
     # 按receive_id分组，并计算duration的平均值
     receive_id_avg = df.groupby('receive_id')['duration'].mean()
-
     receive_id_list = receive_id_avg.index.tolist()
     duration_list = receive_id_avg.values.tolist()
     shortened_receive_id_list = [shorten_id(node_id) for node_id in receive_id_list]
-
+    # 获取duration_list中的最大值最小值
+    min_value = float(min(duration_list))
+    max_value = float(max(duration_list))
     bar = (
         Bar()
         .add_xaxis(shortened_receive_id_list)
         .add_yaxis(series_name="平均传输时间", y_axis=duration_list)
-        .set_global_opts(title_opts=opts.TitleOpts(title="从"+shorten_id(send_id)+"发出消息计算结果"),
+        .set_global_opts(title_opts=opts.TitleOpts(title="从" + shorten_id(send_id) + "发出消息计算结果"),
                          toolbox_opts=opts.ToolboxOpts(),
-                         visualmap_opts=opts.VisualMapOpts(),
+                         visualmap_opts=opts.VisualMapOpts(
+                             min_=min_value,
+                             max_=max_value
+                         ),
                          datazoom_opts=[
                              opts.DataZoomOpts(range_start=0, range_end=100),
                          ],
@@ -133,6 +135,7 @@ def get_net_p2p_transmission_latency():
 
     chart, chart_js = parse_html(bar.render_embed())
     return render_template('draw.html', chart=chart, chart_js=chart_js)
+
 
 # --数据层--
 # 数据库写入速率
@@ -152,14 +155,21 @@ def get_db_state_write_rate():
     new_df.rename(columns={'write_duration': 'value'}, inplace=True)
     # 将新的DataFrame转换为字典列表
     data = new_df.to_dict('records')
-
+    # 获取value中的最大值最小值
+    min_value, max_value = 0, 100
+    if len(data) != 0:
+        min_value = float(min(data, key=lambda x: x['value'])['value'])
+        max_value = float(max(data, key=lambda x: x['value'])['value'])
     bar = (
         Bar()
         .add_xaxis(new_df['block_height'].tolist())
         .add_yaxis(series_name="写入耗时", y_axis=data)
         .set_global_opts(title_opts=opts.TitleOpts(title="数据库写入速率"),
                          toolbox_opts=opts.ToolboxOpts(),
-                         visualmap_opts=opts.VisualMapOpts(),
+                         visualmap_opts=opts.VisualMapOpts(
+                             min_=min_value,
+                             max_=max_value
+                         ),
                          datazoom_opts=[
                              opts.DataZoomOpts(range_start=40, range_end=60),
                          ],
@@ -171,7 +181,8 @@ def get_db_state_write_rate():
                                  """
                                  function (params) {
                                      console.log(params);
-                                     return '区块哈希:'+ params.data.block_hash ;
+                                     return '区块哈希:'+ params.data.block_hash+ '</br>' +
+                                            '写入耗时:'+ params.data.value+ 's' ;
                                  }
                                  """
                              )
@@ -179,16 +190,205 @@ def get_db_state_write_rate():
                          )
     )
 
+    chart, chart_js = parse_html(bar.render_embed())
+    return render_template('draw.html', chart=chart, chart_js=chart_js)
 
-
-    chart,chart_js = parse_html(bar.render_embed())
-    return render_template('draw.html', chart = chart, chart_js = chart_js)
 
 # 数据库读取速率
+@app.route("/DBStateReadRate")
+def get_db_state_read_rate():
+    filename = "db_state_read_rate.csv"
+    # 读取csv文件
+    df = pd.read_csv(filepath + filename)
+
+    # 使用loc选择特定列
+    new_df = df.loc[:, ['block_hash', 'read_duration','type']]
+    # 去掉'read_duration'列中的's'
+    new_df.loc[:, 'read_duration'] = new_df.loc[:, 'read_duration'].str.replace('s', '')
+    # 在'block_hash'列前添加'0x'
+    new_df.loc[:, 'block_hash'] = new_df.loc[:, 'block_hash'].apply(lambda x: '0x' + str(x))
+    # 重命名'read_duration'列为'value'
+    new_df.rename(columns={'read_duration': 'value'}, inplace=True)
+    # 将新的DataFrame转换为字典列表
+    data = new_df.to_dict('records')
+    # 获取value中的最大值最小值
+    min_value, max_value = 0, 100
+    if len(data) != 0:
+        min_value = float(min(data, key=lambda x: x['value'])['value'])
+        max_value = float(max(data, key=lambda x: x['value'])['value'])
+    bar = (
+        Bar()
+        .add_xaxis(df["measure_time"].tolist())
+        .add_yaxis(series_name="读取耗时", y_axis=data)
+        .set_global_opts(title_opts=opts.TitleOpts(title="数据库读取速率"),
+                         toolbox_opts=opts.ToolboxOpts(),
+                         visualmap_opts=opts.VisualMapOpts(
+                             min_=min_value,
+                             max_=max_value
+                         ),
+                         datazoom_opts=[
+                             opts.DataZoomOpts(range_start=45, range_end=55),
+                         ],
+                         xaxis_opts=opts.AxisOpts(name="开始读取时刻"),
+                         yaxis_opts=opts.AxisOpts(name="读取耗时/s"),
+                         legend_opts=opts.LegendOpts(pos_left="center"),
+                         tooltip_opts=opts.TooltipOpts(
+                             formatter=JsCode(
+                                 """
+                                 function (params) {
+                                     console.log(params);
+                                     return '区块哈希:'+ params.data.block_hash + '</br>' +
+                                            '读取位置:'+ params.data.type + '</br>' +
+                                            '读取耗时:'+ params.data.value+ 's';
+                                 }
+                                 """
+                             )
+                         ),
+                         )
+
+    )
+    type_counts = df["type"].value_counts()
+    pie = (
+        Pie()
+        .add(
+            series_name="读取位置",
+            data_pair=[list(i) for i in type_counts.items()],  # 将Series转换为列表
+            center=["80%", "25%"],
+            radius="15%",
+        )
+        .set_series_opts(
+            tooltip_opts=opts.TooltipOpts(
+                trigger="item", formatter="{a} <br/>{b}: {c} ({d}%)"
+            ),
+        )
+    )
+    chart, chart_js = parse_html(bar.overlap(pie).render_embed())
+    return render_template('draw.html', chart=chart, chart_js=chart_js)
 
 # --共识层--
+# 每轮PBFT共识耗时
+@app.route("/ConsensusPBFTCost")
+def get_consensus_pbft_cost():
+    filename = "consensus_pbft_cost.csv"
+    # 读取csv文件
+    df = pd.read_csv(filepath + filename)
 
+    # 使用loc选择特定列
+    new_df = df.loc[:, ['block_height', 'type', 'pbft_cost']]
+    # 去掉'pbft_cost'列中的's'
+    new_df.loc[:, 'pbft_cost'] = new_df.loc[:, 'pbft_cost'].str.replace('s', '')
+    # 重命名'pbft_cost'列为'value'
+    new_df.rename(columns={'pbft_cost': 'value'}, inplace=True)
+    # 将新的DataFrame转换为字典列表
+    data = new_df.to_dict('records')
+    # 获取value中的最大值最小值
+    min_value, max_value = 0, 100
+    if len(data) != 0:
+        min_value = float(min(data, key=lambda x: x['value'])['value'])
+        max_value = float(max(data, key=lambda x: x['value'])['value'])
+    bar = (
+        Bar()
+        .add_xaxis(new_df['block_height'].tolist())
+        .add_yaxis(series_name="共识耗时", y_axis=data)
+        .set_global_opts(title_opts=opts.TitleOpts(title="每轮PBFT共识耗时"),
+                         toolbox_opts=opts.ToolboxOpts(),
+                         visualmap_opts=opts.VisualMapOpts(
+                             min_=min_value,
+                             max_=max_value
+                         ),
+                         datazoom_opts=[
+                             opts.DataZoomOpts(range_start=40, range_end=60),
+                         ],
+                         xaxis_opts=opts.AxisOpts(name="区块高度"),
+                         yaxis_opts=opts.AxisOpts(name="共识耗时/s"),
+                         legend_opts=opts.LegendOpts(pos_left="center"),
+                         tooltip_opts=opts.TooltipOpts(
+                             formatter=JsCode(
+                                 """
+                                 function (params) {
+                                     console.log(params);
+                                     return '区块高度:'+ params.data.block_height+ '</br>' +
+                                            '共识类型:'+ params.data.type+ '</br>' +
+                                            '共识耗时:'+ params.data.value+ 's' ;
+                                 }
+                                 """
+                             )
+                         ),
+                         )
+    )
 
+    type_counts = df["type"].value_counts()
+    pie = (
+        Pie()
+        .add(
+            series_name="共识类型",
+            data_pair=[list(i) for i in type_counts.items()],  # 将Series转换为列表
+            center=["80%", "25%"],
+            radius="15%",
+        )
+        .set_series_opts(
+            tooltip_opts=opts.TooltipOpts(
+                trigger="item", formatter="{a} <br/>{b}: {c} ({d}%)"
+            ),
+        )
+    )
+
+    chart, chart_js = parse_html(bar.overlap(pie).render_embed())
+    return render_template('draw.html', chart=chart, chart_js=chart_js)
+
+# 每轮Raft共识耗时
+@app.route("/ConsensusRaftCost")
+def get_consensus_raft_cost():
+    filename = "consensus_raft_cost.csv"
+    # 读取csv文件
+    df = pd.read_csv(filepath + filename)
+
+    # 使用loc选择特定列
+    new_df = df.loc[:, ['block_height', 'raft_cost']]
+    # 去掉'raft_cost'列中的's'
+    new_df.loc[:, 'raft_cost'] = new_df.loc[:, 'raft_cost'].str.replace('s', '')
+    # 重命名'raft_cost'列为'value'
+    new_df.rename(columns={'raft_cost': 'value'}, inplace=True)
+    # 将新的DataFrame转换为字典列表
+    data = new_df.to_dict('records')
+    # 获取value中的最大值最小值
+    min_value , max_value = 0 , 100
+    if len(data) != 0:
+        min_value = float(min(data, key=lambda x: x['value'])['value'])
+        max_value = float(max(data, key=lambda x: x['value'])['value'])
+    bar = (
+        Bar()
+        .add_xaxis(new_df['block_height'].tolist())
+        .add_yaxis(series_name="共识耗时", y_axis=data)
+        .set_global_opts(title_opts=opts.TitleOpts(title="每轮Raft共识耗时"),
+                         toolbox_opts=opts.ToolboxOpts(),
+                         visualmap_opts=opts.VisualMapOpts(
+                             min_=min_value,
+                             max_=max_value
+                         ),
+                         datazoom_opts=[
+                             opts.DataZoomOpts(range_start=40, range_end=60),
+                         ],
+                         xaxis_opts=opts.AxisOpts(name="区块高度"),
+                         yaxis_opts=opts.AxisOpts(name="共识耗时/s"),
+                         legend_opts=opts.LegendOpts(pos_left="center"),
+                         tooltip_opts=opts.TooltipOpts(
+                             formatter=JsCode(
+                                 """
+                                 function (params) {
+                                     console.log(params);
+                                     return '区块高度:'+ params.data.block_height+ '</br>' +
+                                            '共识类型:'+ 'Raft' + '</br>' +
+                                            '共识耗时:'+ params.data.value+ 's' ;
+                                 }
+                                 """
+                             )
+                         ),
+                         )
+    )
+
+    chart, chart_js = parse_html(bar.render_embed())
+    return render_template('draw.html', chart=chart, chart_js=chart_js)
 # --合约层--
 # 合约执行时间
 @app.route("/ContractTime")
@@ -208,13 +408,21 @@ def get_contract_time():
     new_df.rename(columns={'exec_time': 'value'}, inplace=True)
     # 将新的DataFrame转换为字典列表
     data = new_df.to_dict('records')
+    # 获取value中的最大值最小值
+    min_value, max_value = 0, 100
+    if len(data) != 0:
+        min_value = float(min(data, key=lambda x: x['value'])['value'])
+        max_value = float(max(data, key=lambda x: x['value'])['value'])
     bar = (
         Bar()
         .add_xaxis(df["start_time"].tolist())
         .add_yaxis(series_name="执行时间", y_axis=data)
         .set_global_opts(title_opts=opts.TitleOpts(title="合约执行时间"),
                          toolbox_opts=opts.ToolboxOpts(),
-                         visualmap_opts=opts.VisualMapOpts(),
+                         visualmap_opts=opts.VisualMapOpts(
+                             min_ = min_value,
+                             max_ = max_value
+                         ),
                          datazoom_opts=[
                              opts.DataZoomOpts(range_start=45, range_end=55),
                          ],
@@ -227,7 +435,8 @@ def get_contract_time():
                                  function (params) {
                                      console.log(params);
                                      return '合约地址:'+ params.data.contract_address + '</br>' +
-                                             '交易哈希:'+ params.data.tx_hash;
+                                             '交易哈希:'+ params.data.tx_hash  + '</br>' +
+                                             '执行时间:'+ params.data.value+ 's' ;
                                  }
                                  """
                              )
@@ -241,8 +450,8 @@ def get_contract_time():
         .add(
             series_name="合约类型",
             data_pair=[list(i) for i in type_counts.items()],  # 将Series转换为列表
-            center=["75%", "35%"],
-            radius="28%",
+            center=["80%", "25%"],
+            radius="15%",
         )
         .set_series_opts(
             tooltip_opts=opts.TooltipOpts(
@@ -255,9 +464,7 @@ def get_contract_time():
 
 
 # --交易生命周期--
-
-
-
+# 交易延迟
 
 
 if __name__ == "__main__":
