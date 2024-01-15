@@ -176,22 +176,22 @@
                                             交易生命周期
                                         </a>
                                         <div class="dropdown-menu">
-                                            <a class="dropdown-item" href="#">交易延迟</a>
-                                            <a class="dropdown-item" href="#">交易排队时延</a>
-                                            <a class="dropdown-item" href="#">交易池输入通量</a>
-                                            <a class="dropdown-item" href="#">出块耗时</a>
-                                            <a class="dropdown-item" href="#">块内交易吞吐量</a>
-                                            <a class="dropdown-item" href="#">块内交易冲突率</a>
-                                            <a class="dropdown-item" href="#">区块验证效率</a>
+                                            <a class="dropdown-item" href="/TxDelay">交易延迟</a>
+                                            <a class="dropdown-item" href="/TxQueueDelay">交易排队时延</a>
+                                            <a class="dropdown-item" href="/TransactionPoolInputThroughput">交易池输入通量</a>
+                                            <a class="dropdown-item" href="/BlockCommitDuration">出块耗时</a>
+                                            <a class="dropdown-item" href="/TxInBlockTps">块内交易吞吐量</a>
+                                            <a class="dropdown-item" href="/BlockTxConflictRate">块内交易冲突率</a>
+                                            <a class="dropdown-item" href="/BlockValidationEfficiency">区块验证效率</a>
                                         </div>
                                     </li>
                                 </ul>
                             </div>
                             <!--记录文件夹-->
                             <div class="input-group">
-                                <input type="text" class="form-control" placeholder="输入记录文件夹路径">
+                                <input type="text" class="form-control" placeholder="输入记录文件夹路径" id="input_filepath">
                                 <div class="input-group-append">
-                                    <button class="btn btn-outline-info" type="button">确认</button>
+                                    <button class="btn btn-outline-info" type="button" id="btn_submit_filepath">确认</button>
                                 </div>
                             </div>
                         </nav>
@@ -206,6 +206,23 @@
         </div>
     </div>
 </div>
+
+<script>
+    $(function(){
+        $('#btn_submit_filepath').click(function(){
+            let filepath = $('#input_filepath').val();
+            $.ajax({
+                type:"POST",
+                url:"http://127.0.0.1:5000/changeFilepath",
+                data: filepath,
+                success:function (data){
+                    location.reload();
+                }
+            })
+        });
+
+    });
+</script>
 
 
 
