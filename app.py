@@ -30,17 +30,27 @@ def calculate_duration(end_time, start_time):
     start_time = datetime.strptime(start_time, formatted_time)
     return (end_time - start_time).total_seconds()
 
+@app.route('/')
+def bigBoard():
+    return render_template("base.html")
+
+# 修改记录文件夹路径
 @app.route('/changeFilepath', methods = ["POST"])
 def change_filepath():
     input_path = request.get_data()
     global filepath
     filepath =input_path.decode('utf-8')
-    print("hhh",filepath)
+    print("new_path",filepath)
     return "success"
 
-@app.route('/')
-def bigBoard():
-    return render_template("base.html")
+# 操作开关
+@app.route('/switch', methods = ["POST"])
+def change_switch():
+    input_switch = request.get_data()
+    # global switch
+    # switch = input_switch.decode('utf-8')
+    # print("new_switch",switch)
+    return "success"
 
 
 # --网络层--
@@ -50,6 +60,12 @@ def get_peer_message_throughput():
     filename = "/peer_message_throughput.csv"
     # 读取csv文件
     df = pd.read_csv(filepath + filename)
+    if len(df) <= 0:
+        return render_template('draw.html', chart="<h2>当前文件尚无数据</h2>")
+
+    # 获取message_size中的最大值最小值
+    min_value = float(min(df["message_size"].tolist()))
+    max_value = float(max(df["message_size"].tolist()))
 
     # 按照action_type拆分数据
     received_df = df.loc[df['action_type'] == 'Received']
@@ -68,9 +84,12 @@ def get_peer_message_throughput():
         .add_yaxis(series_name="Channel消息", y_axis=received_channel["message_size"].tolist(), is_smooth=True)
         .set_global_opts(title_opts=opts.TitleOpts(title="节点收发消息总量-接收"),
                          toolbox_opts=opts.ToolboxOpts(),
-                         visualmap_opts=opts.VisualMapOpts(),
+                         visualmap_opts=opts.VisualMapOpts(
+                             min_ = min_value,
+                             max_ = max_value
+                         ),
                          datazoom_opts=[
-                             opts.DataZoomOpts(range_start=0, range_end=100),
+                             opts.DataZoomOpts(range_start=45, range_end=55),
                          ],
                          xaxis_opts=opts.AxisOpts(name="测量时刻"),
                          yaxis_opts=opts.AxisOpts(name="消息大小"),
@@ -110,6 +129,8 @@ def get_net_p2p_transmission_latency():
     filename = "/net_p2p_transmission_latency.csv"
     # 读取csv文件
     df = pd.read_csv(filepath + filename)
+    if len(df) <= 0:
+        return render_template('draw.html', chart="<h2>当前文件尚无数据</h2>")
     # 取出send_id列的唯一值，后续作为标题
     send_id = df['send_id'].unique()[0]
     # 取出receive_id、duration两列
@@ -159,6 +180,8 @@ def get_db_state_write_rate():
     filename = "/db_state_write_rate.csv"
     # 读取csv文件
     df = pd.read_csv(filepath + filename)
+    if len(df) <= 0:
+        return render_template('draw.html', chart="<h2>当前文件尚无数据</h2>")
 
     # 使用loc选择特定列
     new_df = df.loc[:, ['block_height', 'block_hash', 'write_duration']]
@@ -215,6 +238,8 @@ def get_db_state_read_rate():
     filename = "/db_state_read_rate.csv"
     # 读取csv文件
     df = pd.read_csv(filepath + filename)
+    if len(df) <= 0:
+        return render_template('draw.html', chart="<h2>当前文件尚无数据</h2>")
 
     # 使用loc选择特定列
     new_df = df.loc[:, ['block_hash', 'read_duration','type']]
@@ -287,6 +312,8 @@ def get_consensus_pbft_cost():
     filename = "/consensus_pbft_cost.csv"
     # 读取csv文件
     df = pd.read_csv(filepath + filename)
+    if len(df) <= 0:
+        return render_template('draw.html', chart="<h2>当前文件尚无数据</h2>")
 
     # 使用loc选择特定列
     new_df = df.loc[:, ['block_height', 'type', 'pbft_cost']]
@@ -357,6 +384,8 @@ def get_consensus_raft_cost():
     filename = "/consensus_raft_cost.csv"
     # 读取csv文件
     df = pd.read_csv(filepath + filename)
+    if len(df) <= 0:
+        return render_template('draw.html', chart="<h2>当前文件尚无数据</h2>")
 
     # 使用loc选择特定列
     new_df = df.loc[:, ['block_height', 'raft_cost']]
@@ -411,6 +440,8 @@ def get_contract_time():
     filename = "/contract_time.csv"
     # 读取csv文件
     df = pd.read_csv(filepath + filename)
+    if len(df) <= 0:
+        return render_template('draw.html', chart="<h2>当前文件尚无数据</h2>")
 
     # 使用loc选择特定列
     new_df = df.loc[:, ['tx_hash', 'contract_address', 'exec_time']]
@@ -485,6 +516,8 @@ def get_tx_delay():
     # 读取csv文件
     df_start = pd.read_csv(filepath + '/tx_delay_start.csv')
     df_end = pd.read_csv(filepath + '/tx_delay_end.csv')
+    if len(df_start) <= 0 or len(df_end) <= 0:
+        return render_template('draw.html', chart="<h2>当前文件尚无数据</h2>")
     # 重命名列
     df_start = df_start.rename(columns={'measure_time': 'start_time'})
     df_end = df_end.rename(columns={'measure_time': 'end_time'})
@@ -543,6 +576,8 @@ def get_tx_delay():
 def get_tx_queue_delay():
     # 读取csv文件
     df = pd.read_csv(filepath + '/tx_queue_delay.csv')
+    if len(df) <= 0:
+        return render_template('draw.html', chart="<h2>当前文件尚无数据</h2>")
     # 根据"in/outFlag"列的值选择行，并分别赋值给df_in和df_out
     df_in = df.loc[df['in/outFlag'] == 'in']
     df_out = df.loc[df['in/outFlag'] == 'out']
@@ -604,6 +639,8 @@ def get_transaction_pool_input_throughput():
     filename = "/transaction_pool_input_throughput.csv"
     # 读取csv文件
     df = pd.read_csv(filepath + filename)
+    if len(df) <= 0:
+        return render_template('draw.html', chart="<h2>当前文件尚无数据</h2>")
 
     sum_txs = df.shape[0]  # 当前记录的交易数
     start_time = str(df.iloc[0]['measure_time'])  # 第一条的时间
@@ -676,6 +713,9 @@ def get_block_commit_duration():
     # 读取csv文件
     df_start = pd.read_csv(filepath + '/block_commit_duration_start.csv')
     df_end = pd.read_csv(filepath + '/block_commit_duration_end.csv')
+    if len(df_start) <= 0 or len(df_end) <= 0:
+        return render_template('draw.html', chart="<h2>当前文件尚无数据</h2>")
+
     # 重命名列
     df_start = df_start.rename(columns={'measure_time': 'start_time'})
     df_end = df_end.rename(columns={'measure_time': 'end_time'})
@@ -740,6 +780,8 @@ def get_tx_in_block_tps():
     # 读取csv文件
     df_start = pd.read_csv(filepath + '/tx_in_block_tps.csv')  # 打包完成时刻
     df_end = pd.read_csv(filepath + '/block_commit_duration_end.csv')  # 区块落库时刻
+    if len(df_start) <= 0 or len(df_end) <= 0:
+        return render_template('draw.html', chart="<h2>当前文件尚无数据</h2>")
     # 重命名列
     df_start = df_start.rename(columns={'measure_time': 'start_time'})
     df_end = df_end.rename(columns={'measure_time': 'end_time'})
@@ -804,6 +846,8 @@ def get_tx_in_block_tps():
 def get_block_tx_conflict_rate():
     # 读取csv文件
     df = pd.read_csv(filepath + '/block_tx_conflict_rate.csv')
+    if len(df) <= 0:
+        return render_template('draw.html', chart="<h2>当前文件尚无数据</h2>")
     # 按block_height分组
     grouped = df.groupby('block_height')
     # 创建一个新的DataFrame来存储结果
@@ -874,6 +918,8 @@ def get_block_tx_conflict_rate():
 def get_block_validation_efficiency():
     # 读取csv文件
     df = pd.read_csv(filepath + '/block_validation_efficiency.csv')  # 打包完成时刻
+    if len(df) <= 0:
+        return render_template('draw.html', chart="<h2>当前文件尚无数据</h2>")
     # 计算时间差
     df['duration'] = df.apply(lambda row: calculate_duration(row['end_time'], row['start_time']), axis=1)
     df = df[df['duration'] >= 0]
