@@ -31,9 +31,9 @@
             <div class="panel-left d-flex flex-column justify-content-center align-items-center bg-light col-3">
                 <!--开关部分-->
                 <div class="input-group" style="margin-bottom: 15px;">
-                    <input type="text" class="form-control" placeholder="输入操作节点IP地址">
+                    <input type="text" class="form-control" placeholder="输入操作节点IP地址" id="input_server">
                     <div class="input-group-append">
-                        <button class="btn btn-outline-info" type="button">提交</button>
+                        <button class="btn btn-outline-info" type="button" id="btn_submit_server">提交</button>
                     </div>
                 </div>
 
@@ -220,6 +220,67 @@
                 }
             })
         });
+
+        $('#btn_submit_server').click(function () {
+            // 获取元素的开闭状态
+            let All_status = $('input.form-check-input#All').prop('checked');
+            let block_commit_duration_end_status = $('input.form-check-input#block_commit_duration_end').prop('checked');
+            let block_commit_duration_start_status = $('input.form-check-input#block_commit_duration_start').prop('checked');
+            let block_tx_conflict_rate_status = $('input.form-check-input#block_tx_conflict_rate').prop('checked');
+            let block_validation_efficiency_status = $('input.form-check-input#block_validation_efficiency').prop('checked');
+            let consensus_pbft_cost_status = $('input.form-check-input#consensus_pbft_cost').prop('checked');
+            let consensus_raft_cost_status = $('input.form-check-input#consensus_raft_cost').prop('checked');
+            let contract_time_status = $('input.form-check-input#contract_time').prop('checked');
+            let db_state_read_rate_status = $('input.form-check-input#db_state_read_rate').prop('checked');
+            let db_state_write_rate_status = $('input.form-check-input#db_state_write_rate').prop('checked');
+            let net_p2p_transmission_latency_status = $('input.form-check-input#net_p2p_transmission_latency').prop('checked');
+            let peer_message_throughput_status = $('input.form-check-input#peer_message_throughput').prop('checked');
+            let transaction_pool_input_throughput_status = $('input.form-check-input#transaction_pool_input_throughput').prop('checked');
+            let tx_delay_end_status = $('input.form-check-input#tx_delay_end').prop('checked');
+            let tx_delay_start_status = $('input.form-check-input#tx_delay_start').prop('checked');
+            let tx_in_block_tps_status = $('input.form-check-input#tx_in_block_tps').prop('checked');
+            let tx_queue_delay_status = $('input.form-check-input#tx_queue_delay').prop('checked');
+
+            // 获取输入的地址
+            let server = $('input#input_server').val();
+
+            // 构造要发送的数据
+            let data ="All: "+All_status + "\n"
+                +"block_commit_duration_end: "+block_commit_duration_end_status + "\n"
+                +"block_commit_duration_start: "+block_commit_duration_start_status + "\n"
+                +"block_tx_conflict_rate: "+block_tx_conflict_rate_status + "\n"
+                +"block_validation_efficiency: "+block_validation_efficiency_status + "\n"
+                +"consensus_pbft_cost: "+consensus_pbft_cost_status + "\n"
+                +"consensus_raft_cost: "+consensus_raft_cost_status + "\n"
+                +"contract_time: "+contract_time_status + "\n"
+                +"db_state_read_rate: "+db_state_read_rate_status + "\n"
+                +"db_state_write_rate: "+db_state_write_rate_status + "\n"
+                +"net_p2p_transmission_latency: "+net_p2p_transmission_latency_status + "\n"
+                +"peer_message_throughput: "+peer_message_throughput_status + "\n"
+                +"transaction_pool_input_throughput: "+transaction_pool_input_throughput_status + "\n"
+                +"tx_delay_end: "+tx_delay_end_status + "\n"
+                +"tx_delay_start: "+tx_delay_start_status + "\n"
+                +"tx_in_block_tps: "+tx_in_block_tps_status + "\n"
+                +"tx_queue_delay: "+tx_queue_delay_status
+            console.log(data);
+
+            // 发送PUT请求
+            $.ajax({
+                url: server,
+                type: 'PUT',
+                data: data,
+                contentType: 'application/x-yaml',
+                success: function(response) {
+                    // 发送并修改开关状态成功
+                    alert('发送并修改开关状态成功');
+                },
+                error: function(xhr, status, error) {
+                    // 请检查配置服务器是否运行
+                    alert('请检查配置服务器是否运行');
+                }
+            });
+
+        })
 
     });
 </script>
