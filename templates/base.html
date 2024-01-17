@@ -39,79 +39,79 @@
 
                 <div class="d-flex flex-column align-items-start panel-switch">
                     <div class="form-check panel-form">
-                        <input class="form-check-input" checked type="checkbox" value="" id="All">
+                        <input class="form-check-input" type="checkbox" value="" id="All">
                         <label class="form-check-label" for="All">All</label>
                     </div>
                     <div class="form-check panel-form">
-                        <input class="form-check-input" checked type="checkbox" value="" id="block_commit_duration_end">
+                        <input class="form-check-input" type="checkbox" value="" id="block_commit_duration_end">
                         <label class="form-check-label"
                                for="block_commit_duration_end">block_commit_duration_end</label>
                     </div>
                     <div class="form-check panel-form">
-                        <input class="form-check-input" checked type="checkbox" value=""
+                        <input class="form-check-input" type="checkbox" value=""
                                id="block_commit_duration_start">
                         <label class="form-check-label"
                                for="block_commit_duration_start">block_commit_duration_start</label>
                     </div>
                     <div class="form-check panel-form">
-                        <input class="form-check-input" checked type="checkbox" value="" id="block_tx_conflict_rate">
+                        <input class="form-check-input" type="checkbox" value="" id="block_tx_conflict_rate">
                         <label class="form-check-label" for="block_tx_conflict_rate">block_tx_conflict_rate</label>
                     </div>
                     <div class="form-check panel-form">
-                        <input class="form-check-input" checked type="checkbox" value=""
+                        <input class="form-check-input" type="checkbox" value=""
                                id="block_validation_efficiency">
                         <label class="form-check-label"
                                for="block_validation_efficiency">block_validation_efficiency</label>
                     </div>
                     <div class="form-check panel-form">
-                        <input class="form-check-input" checked type="checkbox" value="" id="consensus_pbft_cost">
+                        <input class="form-check-input" type="checkbox" value="" id="consensus_pbft_cost">
                         <label class="form-check-label" for="consensus_pbft_cost">consensus_pbft_cost</label>
                     </div>
                     <div class="form-check panel-form">
-                        <input class="form-check-input" checked type="checkbox" value="" id="consensus_raft_cost">
+                        <input class="form-check-input" type="checkbox" value="" id="consensus_raft_cost">
                         <label class="form-check-label" for="consensus_raft_cost">consensus_raft_cost</label>
                     </div>
                     <div class="form-check panel-form">
-                        <input class="form-check-input" checked type="checkbox" value="" id="contract_time">
+                        <input class="form-check-input" type="checkbox" value="" id="contract_time">
                         <label class="form-check-label" for="contract_time">contract_time</label>
                     </div>
                     <div class="form-check panel-form">
-                        <input class="form-check-input" checked type="checkbox" value="" id="db_state_read_rate">
+                        <input class="form-check-input" type="checkbox" value="" id="db_state_read_rate">
                         <label class="form-check-label" for="db_state_read_rate">db_state_read_rate</label>
                     </div>
                     <div class="form-check panel-form">
-                        <input class="form-check-input" checked type="checkbox" value="" id="db_state_write_rate">
+                        <input class="form-check-input" type="checkbox" value="" id="db_state_write_rate">
                         <label class="form-check-label" for="db_state_write_rate">db_state_write_rate</label>
                     </div>
                     <div class="form-check panel-form">
-                        <input class="form-check-input" checked type="checkbox" value=""
+                        <input class="form-check-input" type="checkbox" value=""
                                id="net_p2p_transmission_latency">
                         <label class="form-check-label"
                                for="net_p2p_transmission_latency">net_p2p_transmission_latency</label>
                     </div>
                     <div class="form-check panel-form">
-                        <input class="form-check-input" checked type="checkbox" value="" id="peer_message_throughput">
+                        <input class="form-check-input" type="checkbox" value="" id="peer_message_throughput">
                         <label class="form-check-label" for="peer_message_throughput">peer_message_throughput</label>
                     </div>
                     <div class="form-check panel-form">
-                        <input class="form-check-input" checked type="checkbox" value=""
+                        <input class="form-check-input" type="checkbox" value=""
                                id="transaction_pool_input_throughput">
                         <label class="form-check-label" for="transaction_pool_input_throughput">transaction_pool_input_throughput</label>
                     </div>
                     <div class="form-check panel-form">
-                        <input class="form-check-input" checked type="checkbox" value="" id="tx_delay_end">
+                        <input class="form-check-input" type="checkbox" value="" id="tx_delay_end">
                         <label class="form-check-label" for="tx_delay_end">tx_delay_end</label>
                     </div>
                     <div class="form-check panel-form">
-                        <input class="form-check-input" checked type="checkbox" value="" id="tx_delay_start">
+                        <input class="form-check-input" type="checkbox" value="" id="tx_delay_start">
                         <label class="form-check-label" for="tx_delay_start">tx_delay_start</label>
                     </div>
                     <div class="form-check panel-form">
-                        <input class="form-check-input" checked type="checkbox" value="" id="tx_in_block_tps">
+                        <input class="form-check-input" type="checkbox" value="" id="tx_in_block_tps">
                         <label class="form-check-label" for="tx_in_block_tps">tx_in_block_tps</label>
                     </div>
                     <div class="form-check panel-form">
-                        <input class="form-check-input" checked type="checkbox" value="" id="tx_queue_delay">
+                        <input class="form-check-input" type="checkbox" value="" id="tx_queue_delay">
                         <label class="form-check-label" for="tx_queue_delay">tx_queue_delay</label>
                     </div>
 
@@ -209,6 +209,43 @@
 
 <script>
     $(function(){
+
+         // 获取最新配置
+        $.ajax({
+            url:"http://127.0.0.1:5000/updateSwitch",
+            type: 'POST',
+            success: function(resp) {
+                console.log(resp);
+                if(resp.status === "success"){
+                    // 更新开关状态
+                    $('#All').prop('checked', resp.data["All"]);
+                    $('#block_commit_duration_end').prop('checked', resp.data["block_commit_duration_end"]);
+                    $('#block_commit_duration_start').prop('checked', resp.data["block_commit_duration_start"]);
+                    $('#block_tx_conflict_rate').prop('checked', resp.data["block_tx_conflict_rate"]);
+                    $('#block_validation_efficiency').prop('checked', resp.data["block_validation_efficiency"]);
+                    $('#consensus_pbft_cost').prop('checked', resp.data["consensus_pbft_cost"]);
+                    $('#consensus_raft_cost').prop('checked', resp.data["consensus_raft_cost"]);
+                    $('#contract_time').prop('checked', resp.data["contract_time"]);
+                    $('#db_state_read_rate').prop('checked', resp.data["db_state_read_rate"]);
+                    $('#db_state_write_rate').prop('checked', resp.data["db_state_write_rate"]);
+                    $('#net_p2p_transmission_latency').prop('checked', resp.data["net_p2p_transmission_latency"]);
+                    $('#peer_message_throughput').prop('checked', resp.data["peer_message_throughput"]);
+                    $('#transaction_pool_input_throughput').prop('checked', resp.data["transaction_pool_input_throughput"]);
+                    $('#tx_delay_end').prop('checked', resp.data["tx_delay_end"]);
+                    $('#tx_delay_start').prop('checked', resp.data["tx_delay_start"]);
+                    $('#tx_in_block_tps').prop('checked', resp.data["tx_in_block_tps"]);
+                    $('#tx_queue_delay').prop('checked', resp.data["tx_queue_delay"]);
+
+                }
+                else{
+                    alert('请检查配置服务器是否运行');
+                }
+            },
+            error: function(xhr, status, error) {
+                alert('请检查配置服务器是否运行');
+            }
+        });
+
         $('#btn_submit_filepath').click(function(){
             let filepath = $('#input_filepath').val();
             $.ajax({
@@ -245,7 +282,7 @@
             let server = $('input#input_server').val();
 
             // 构造要发送的数据
-            let data ="All: "+All_status + "\n"
+            let new_yaml ="All: "+All_status + "\n"
                 +"block_commit_duration_end: "+block_commit_duration_end_status + "\n"
                 +"block_commit_duration_start: "+block_commit_duration_start_status + "\n"
                 +"block_tx_conflict_rate: "+block_tx_conflict_rate_status + "\n"
@@ -262,20 +299,25 @@
                 +"tx_delay_start: "+tx_delay_start_status + "\n"
                 +"tx_in_block_tps: "+tx_in_block_tps_status + "\n"
                 +"tx_queue_delay: "+tx_queue_delay_status
-            console.log(data);
 
-            // 发送PUT请求
+            // 发送POST请求，把url和当前选择传给后端
             $.ajax({
-                url: server,
-                type: 'PUT',
-                data: data,
-                contentType: 'application/x-yaml',
+                url:"http://127.0.0.1:5000/changeSwitch",
+                type: 'POST',
+                data: JSON.stringify({
+                    server: server,
+                    new_yaml: new_yaml
+                }),
+                contentType: 'application/json',
                 success: function(response) {
-                    // 发送并修改开关状态成功
-                    alert('发送并修改开关状态成功');
+                    if(response.status === "success"){
+                        alert('发送并修改开关状态成功');
+                    }
+                    else{
+                        alert('请检查配置服务器是否运行');
+                    }
                 },
                 error: function(xhr, status, error) {
-                    // 请检查配置服务器是否运行
                     alert('请检查配置服务器是否运行');
                 }
             });

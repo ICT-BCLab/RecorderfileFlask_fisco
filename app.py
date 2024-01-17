@@ -1,16 +1,23 @@
+import json
+
 import pandas as pd
-from flask import Flask, render_template,request
+import requests
+import yaml
+from flask import Flask, render_template, request, jsonify
 
 from pyecharts import options as opts
 from pyecharts.charts import Bar, Line, Grid, Pie
 from pyecharts.commons.utils import JsCode
 from bs4 import BeautifulSoup
 from datetime import datetime
+from flask_cors import CORS
 
 app = Flask(__name__, template_folder='templates', static_folder='resource', static_url_path="/")
 
-filepath = "/Users/bethestar/Downloads/myFiscoBcos/fisco/nodes/127.0.0.1/node0/log_record"
+CORS(app, supports_credentials=True)
 
+filepath = "/Users/bethestar/Downloads/myFiscoBcos/fisco/nodes/127.0.0.1/node0/log_record"
+config_server = "127.0.0.1:9530"
 # 把pyecharts自动生成的完整html文件转化成能嵌入到展示小模块的代码
 def parse_html(html_content):
     soup = BeautifulSoup(html_content, "html.parser")
@@ -43,14 +50,31 @@ def change_filepath():
     print("new_path",filepath)
     return "success"
 
-# 操作开关
-@app.route('/switch', methods = ["POST"])
+# 更新开关状态
+@app.route('/changeSwitch', methods = ["POST","GET","PUT"])
 def change_switch():
-    input_switch = request.get_data()
-    # global switch
-    # switch = input_switch.decode('utf-8')
-    # print("new_switch",switch)
-    return "success"
+    info = request.get_json()
+    global config_server
+    config_server = info["server"]
+    url ='http://' +  config_server + '/config/accessconfig'
+    data = info["new_yaml"]
+    headers = {'Content-Type': 'application/x-yaml'}
+    response = requests.put(url, data=data, headers=headers)
+
+    if response.status_code == 200:
+        return jsonify({'status': 'success', 'data': yaml.safe_load(response.text)})
+    else:
+        return jsonify({'status': 'error'})
+
+# 获取最新的开关状态
+@app.route('/updateSwitch', methods = ["POST","GET","PUT"])
+def update_switch():
+    url ='http://' +  config_server + '/config/accessconfig'
+    response = requests.get(url)
+    if response.status_code == 200:
+        return jsonify({'status': 'success', 'data': yaml.safe_load(response.text)})
+    else:
+        return jsonify({'status': 'error'})
 
 
 # --网络层--
