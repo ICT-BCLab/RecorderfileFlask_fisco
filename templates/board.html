@@ -14,9 +14,12 @@
     <title>区块链性能测量结果</title>
 </head>
 
+
 <body>
+
 <div class="container-fluid d-flex justify-content-between align-items-center"
      style="background:linear-gradient(135deg, rgba(102, 149, 212, 0.8), rgba(41, 234, 196, 0.8)) ;min-height: 100vh;">
+
     <div class="page-bg justify-content-center align-items-center">
         <div>
             <h4>面向FISCO-BCOS的区块链性能松耦合测量系统</h4>
@@ -34,6 +37,7 @@
                             <button class="btn btn-outline-info" type="button" id="btn_submit_server">提交</button>
                         </div>
                     </div>
+
 
                     <div class="d-flex flex-column align-items-center justify-content-center panel-switch">
                         <table class="table table-sm table-borderless">
@@ -180,6 +184,8 @@
                         </table>
                     </div>
                 </div>
+
+
             </div>
             <div class="panel-right col-8">
                 <div class="col d-flex flex-column justify-content-center align-items-center ">
@@ -274,9 +280,9 @@
 </div>
 
 <script>
-    $(function(){
+    $(function () {
 
-        //  // 获取最新配置
+        // 获取最新配置
         // $.ajax({
         //     url:"http://127.0.0.1:5000/updateSwitch",
         //     type: 'POST',
@@ -312,13 +318,13 @@
         //     }
         // });
 
-        $('#btn_submit_filepath').click(function(){
+        $('#btn_submit_filepath').click(function () {
             let filepath = $('#input_filepath').val();
             $.ajax({
-                type:"POST",
-                url:"http://127.0.0.1:5000/changeFilepath",
+                type: "POST",
+                url: "http://127.0.0.1:5000/changeFilepath",
                 data: filepath,
-                success:function (data){
+                success: function (data) {
                     location.reload();
                 }
             })
@@ -348,42 +354,41 @@
             let server = $('input#input_server').val();
 
             // 构造要发送的数据
-            let new_yaml ="All: "+All_status + "\n"
-                +"block_commit_duration_end: "+block_commit_duration_end_status + "\n"
-                +"block_commit_duration_start: "+block_commit_duration_start_status + "\n"
-                +"block_tx_conflict_rate: "+block_tx_conflict_rate_status + "\n"
-                +"block_validation_efficiency: "+block_validation_efficiency_status + "\n"
-                +"consensus_pbft_cost: "+consensus_pbft_cost_status + "\n"
-                +"consensus_raft_cost: "+consensus_raft_cost_status + "\n"
-                +"contract_time: "+contract_time_status + "\n"
-                +"db_state_read_rate: "+db_state_read_rate_status + "\n"
-                +"db_state_write_rate: "+db_state_write_rate_status + "\n"
-                +"net_p2p_transmission_latency: "+net_p2p_transmission_latency_status + "\n"
-                +"peer_message_throughput: "+peer_message_throughput_status + "\n"
-                +"transaction_pool_input_throughput: "+transaction_pool_input_throughput_status + "\n"
-                +"tx_delay_end: "+tx_delay_end_status + "\n"
-                +"tx_delay_start: "+tx_delay_start_status + "\n"
-                +"tx_in_block_tps: "+tx_in_block_tps_status + "\n"
-                +"tx_queue_delay: "+tx_queue_delay_status
+            let new_yaml = "All: " + All_status + "\n"
+                + "block_commit_duration_end: " + block_commit_duration_end_status + "\n"
+                + "block_commit_duration_start: " + block_commit_duration_start_status + "\n"
+                + "block_tx_conflict_rate: " + block_tx_conflict_rate_status + "\n"
+                + "block_validation_efficiency: " + block_validation_efficiency_status + "\n"
+                + "consensus_pbft_cost: " + consensus_pbft_cost_status + "\n"
+                + "consensus_raft_cost: " + consensus_raft_cost_status + "\n"
+                + "contract_time: " + contract_time_status + "\n"
+                + "db_state_read_rate: " + db_state_read_rate_status + "\n"
+                + "db_state_write_rate: " + db_state_write_rate_status + "\n"
+                + "net_p2p_transmission_latency: " + net_p2p_transmission_latency_status + "\n"
+                + "peer_message_throughput: " + peer_message_throughput_status + "\n"
+                + "transaction_pool_input_throughput: " + transaction_pool_input_throughput_status + "\n"
+                + "tx_delay_end: " + tx_delay_end_status + "\n"
+                + "tx_delay_start: " + tx_delay_start_status + "\n"
+                + "tx_in_block_tps: " + tx_in_block_tps_status + "\n"
+                + "tx_queue_delay: " + tx_queue_delay_status
 
             // 发送POST请求，把url和当前选择传给后端
             $.ajax({
-                url:"http://127.0.0.1:5000/changeSwitch",
+                url: "http://127.0.0.1:5000/changeSwitch",
                 type: 'POST',
                 data: JSON.stringify({
                     server: server,
                     new_yaml: new_yaml
                 }),
                 contentType: 'application/json',
-                success: function(response) {
-                    if(response.status === "success"){
+                success: function (response) {
+                    if (response.status === "success") {
                         alert('发送并修改开关状态成功');
-                    }
-                    else{
+                    } else {
                         alert('请检查配置服务器是否运行');
                     }
                 },
-                error: function(xhr, status, error) {
+                error: function (xhr, status, error) {
                     alert('请检查配置服务器是否运行');
                 }
             });
@@ -392,7 +397,6 @@
 
     });
 </script>
-
 
 
 {% block chart_script %}
