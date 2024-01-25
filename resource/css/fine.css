@@ -2,30 +2,43 @@
 .page-bg{
     position: relative;
     width: 100%;
-    height: 95vh;
+    height: 97vh;
     background-color: rgb(233, 246, 248);
-    margin: 3px;
+    margin: 2px;
     border-radius: 10px;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     /*box-shadow:  1px 1px 9px 5px rgba(26, 26, 26, 0.2);*/
-    padding: 25px;
+    padding: 5px;
 }
 .panel-left{
     background: transparent;
-    box-shadow:  1px 1px 15px 2px rgba(26, 26, 26, 0.13);
+    /*box-shadow:  1px 1px 15px 2px rgba(26, 26, 26, 0.13);*/
     border-radius: 20px;
-    padding: 5px;
+    padding: 10px;
     /*border: 1px solid black;*/
-    height: 90%;
+    height: 95%;
 }
+.panel-switch{
+    width: 100%;
+}
+
+.panel-form{
+    width: 100%;
+    padding-bottom: 20px;
+    font-weight: bolder;
+    font-family: Consolas, monospace;
+    text-shadow: 3px 3px 5px rgba(0, 0, 0, 0.26);
+    color: #0b3a8a;
+}
+
 .panel-right{
     background: transparent;
     /*box-shadow:  1px 1px 9px 5px rgba(26, 26, 26, 0.2);*/
     border-radius: 20px;
-    padding: 10px;
+    padding: 0px;
     /*border: 1px solid black;*/
 
     height: 100%;
@@ -38,28 +51,17 @@
 
 .panel-show{
     width: 100%;
-    height: 75vh;
-    margin: 15px;
+    height: 80vh;
+    margin: 5px;
     border-radius: 10px;
     box-shadow:  1px 1px 15px 2px rgba(26, 26, 26, 0.13);
 }
 
-.panel-switch{
-}
 
-.panel-form{
-    width: 100%;
-    padding: 1px;
-    margin: 1px;
-    font-weight: bolder;
-    font-family: Consolas, monospace;
-    text-shadow: 3px 3px 5px rgba(0, 0, 0, 0.26);
-    color: #0b3a8a;
-}
 
 .panel-draw{
     height: 100%;
     width: 100%;
-    margin: 10px;
-    padding: 10px;
+    margin: 5px;
+    padding: 5px;
 }

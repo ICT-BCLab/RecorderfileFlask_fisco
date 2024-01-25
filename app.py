@@ -6,7 +6,7 @@ import yaml
 from flask import Flask, render_template, request, jsonify
 
 from pyecharts import options as opts
-from pyecharts.charts import Bar, Line, Grid, Pie
+from pyecharts.charts import Bar, Line, Grid, Pie, Tab
 from pyecharts.commons.utils import JsCode
 from bs4 import BeautifulSoup
 from datetime import datetime
@@ -26,6 +26,12 @@ def parse_html(html_content):
     chart = "<div class=\"panel-draw d-flex flex-column justify-content-center align-items-center\" id=\"" + chart_id + "\"></div>"
     return chart, chart_js
 
+# 【针对有多个tab的情况】把pyecharts自动生成的完整html文件转化成能嵌入到展示小模块的代码
+def parse_html_tab(html_content):
+    soup = BeautifulSoup(html_content, "html.parser")
+    chart = soup.body
+    return chart, ""
+
 # 截短过长的哈希值
 def shorten_id(node_id):
     return "0x" + node_id[:8] + "..."
@@ -37,9 +43,33 @@ def calculate_duration(end_time, start_time):
     start_time = datetime.strptime(start_time, formatted_time)
     return (end_time - start_time).total_seconds()
 
+# ---统计分段及占比--
+def construct_bar_hist(df,num_bins,title_name):
+    # str转float
+    df = df.astype(float).round(6)
+    df = df[df >= 0]
+    # 对数据进行分段
+    bin_edges = pd.cut(df, bins=num_bins, include_lowest=False)
+    # 统计每个分段的数量
+    value_counts = bin_edges.value_counts(sort=False)
+    bar_hist = (
+        Bar()
+        .add_xaxis(value_counts.index.astype(str).tolist())
+        .add_yaxis(series_name="频数", y_axis=value_counts.tolist())
+        .set_global_opts(title_opts=opts.TitleOpts(title=title_name+"频数统计"),
+                         toolbox_opts=opts.ToolboxOpts(),
+                         datazoom_opts=[
+                             opts.DataZoomOpts(range_start=0, range_end=100),
+                         ],
+                         xaxis_opts=opts.AxisOpts(name=title_name+"区间"),
+                         yaxis_opts=opts.AxisOpts(name="频数"),
+        )
+    )
+    return bar_hist
+
 @app.route('/')
 def bigBoard():
-    return render_template("base.html")
+    return render_template("board.html")
 
 # 修改记录文件夹路径
 @app.route('/changeFilepath', methods = ["POST"])
@@ -326,7 +356,13 @@ def get_db_state_read_rate():
             ),
         )
     )
-    chart, chart_js = parse_html(bar.overlap(pie).render_embed())
+
+    bar_hist = construct_bar_hist(new_df['value'], 3, "数据库读取耗时")
+
+    tab = Tab()
+    tab.add(bar.overlap(pie), "按时刻查看")
+    tab.add(bar_hist, "按频数查看")
+    chart, chart_js = parse_html_tab(tab.render_embed())
     return render_template('draw.html', chart=chart, chart_js=chart_js)
 
 # --共识层--
@@ -529,7 +565,12 @@ def get_contract_time():
             ),
         )
     )
-    chart, chart_js = parse_html(bar.overlap(pie).render_embed())
+    bar_hist = construct_bar_hist(new_df['value'], 5, "合约执行时间")
+
+    tab = Tab()
+    tab.add(bar.overlap(pie), "按时刻查看")
+    tab.add(bar_hist, "按频数查看")
+    chart, chart_js = parse_html_tab(tab.render_embed())
     return render_template('draw.html', chart=chart, chart_js=chart_js)
 
 
@@ -592,7 +633,12 @@ def get_tx_delay():
                          )
 
     )
-    chart, chart_js = parse_html(bar.render_embed())
+    bar_hist = construct_bar_hist(df['value'], 10, "交易延迟")
+
+    tab = Tab()
+    tab.add(bar, "按时刻查看")
+    tab.add(bar_hist, "按频数查看")
+    chart, chart_js = parse_html_tab(tab.render_embed())
     return render_template('draw.html', chart=chart, chart_js=chart_js)
 
 # 交易排队时延
@@ -654,7 +700,12 @@ def get_tx_queue_delay():
                          )
 
     )
-    chart, chart_js = parse_html(bar.render_embed())
+    bar_hist = construct_bar_hist(df['value'], 10, "交易排队时延")
+
+    tab = Tab()
+    tab.add(bar, "按时刻查看")
+    tab.add(bar_hist, "按频数查看")
+    chart, chart_js = parse_html_tab(tab.render_embed())
     return render_template('draw.html', chart=chart, chart_js=chart_js)
 
 # 交易池输入通量
@@ -990,6 +1041,75 @@ def get_block_validation_efficiency():
 
     )
     chart, chart_js = parse_html(bar.render_embed())
+    return render_template('draw.html', chart=chart, chart_js=chart_js)
+
+
+# 增加分布---交易排队时延
+@app.route("/Try")
+def get_try():
+    # 读取csv文件
+    df = pd.read_csv(filepath + '/tx_queue_delay.csv')
+    if len(df) <= 0:
+        return render_template('draw.html', chart="<h2>当前文件尚无数据</h2>")
+    # 根据"in/outFlag"列的值选择行，并分别赋值给df_in和df_out
+    df_in = df.loc[df['in/outFlag'] == 'in']
+    df_out = df.loc[df['in/outFlag'] == 'out']
+    # 重命名列
+    df_in = df_in.rename(columns={'measure_time': 'start_time'})
+    df_out = df_out.rename(columns={'measure_time': 'end_time'})
+    # 合并df_in和df_out
+    df = pd.merge(df_in, df_out, on='tx_hash')
+    # 计算时间差
+    df['duration'] = df.apply(lambda row: calculate_duration(row['end_time'], row['start_time']), axis=1)
+    df = df[df['duration'] >= 0]
+
+    # 在'tx_hash'列前添加'0x'
+    df.loc[:, 'tx_hash'] = df.loc[:, 'tx_hash'].apply(lambda x: '0x' + str(x))
+    # 重命名'duration'列为'value'
+    df.rename(columns={'duration': 'value'}, inplace=True)
+    # 将新的DataFrame转换为字典列表
+    data = df.to_dict('records')
+    # 获取value中的最大值最小值
+    min_value, max_value = 0, 100
+    if len(data) != 0:
+        min_value = float(min(data, key=lambda x: x['value'])['value'])
+        max_value = float(max(data, key=lambda x: x['value'])['value'])
+    bar = (
+        Bar()
+        .add_xaxis(df["start_time"].tolist())
+        .add_yaxis(series_name="交易排队时延", y_axis=data)
+        .set_global_opts(title_opts=opts.TitleOpts(title="交易排队时延"),
+                         toolbox_opts=opts.ToolboxOpts(),
+                         visualmap_opts=opts.VisualMapOpts(
+                             min_ = min_value,
+                             max_ = max_value
+                         ),
+                         datazoom_opts=[
+                             opts.DataZoomOpts(range_start=45, range_end=55),
+                         ],
+                         xaxis_opts=opts.AxisOpts(name="进入交易池时刻"),
+                         yaxis_opts=opts.AxisOpts(name="交易排队时延/s"),
+                         tooltip_opts=opts.TooltipOpts(
+                             formatter=JsCode(
+                                 """
+                                 function (params) {
+                                     console.log(params);
+                                     return  '交易哈希:'+ params.data.tx_hash  + '</br>' +
+                                             '交易排队时延:'+ params.data.value+ 's' ;
+                                 }
+                                 """
+                             )
+                         ),
+        )
+
+    )
+
+    bar_hist = construct_bar_hist(df['value'],10,"交易排队时延")
+
+    tab = Tab()
+    tab.add(bar, "按时刻查看")
+    tab.add(bar_hist, "按频数查看")
+    chart, chart_js = parse_html_tab(tab.render_embed())
     return render_template('draw.html', chart=chart, chart_js=chart_js)
 
 if __name__ == "__main__":
