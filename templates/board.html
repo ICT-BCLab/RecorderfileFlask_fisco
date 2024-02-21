@@ -17,13 +17,14 @@
 
 <body>
 
-<div class="container-fluid d-flex justify-content-between align-items-center"
+<div class="container-fluid d-flex flex-column justify-content-between align-items-center"
      style="background:linear-gradient(135deg, rgba(102, 149, 212, 0.8), rgba(41, 234, 196, 0.8)) ;min-height: 100vh;">
+    <div class="d-flex flex-row justify-content-between" style="margin-top: 5px; width: 95%;">
+        <h4>面向FISCO-BCOS的区块链性能松耦合测量系统</h4>
+        <img src="images/ict.png" width="42" height="34.5" alt="">
+    </div>
 
     <div class="page-bg justify-content-center align-items-center">
-        <div>
-            <h4>面向FISCO-BCOS的区块链性能松耦合测量系统</h4>
-        </div>
 
         <div class="row position-relative d-flex flex-row justify-content-between align-items-center"
              style="height: 100%; width: 100%;">
@@ -191,7 +192,7 @@
                 <div class="col d-flex flex-column justify-content-center align-items-center ">
                     <aside class="" style="width: 100%;">
                         <nav class="navbar navbar-expand-lg navbar-light bg-light edit-nav">
-                            <a class="navbar-brand" href="#">
+                            <a class="navbar-brand" href="/">
                                 <img src="images/fisco_logo.svg" width="40" height="40" alt="">
                             </a>
                             <button class="navbar-toggler" type="button" data-toggle="collapse"
@@ -268,10 +269,151 @@
                             </div>
                         </nav>
                     </aside>
-                    <div class="d-flex flex-column justify-content-center align-items-center panel-show"
-                         id="chart-show">
-                        {% block chart_div %}
-                        {% endblock %}
+                    <div class="d-flex flex-column justify-content-center align-items-center panel-show">
+                        <div class="d-flex flex-row justify-content-around" style="width: 100%">
+                            <div class="form-inline">
+                                <div class="form-inline">
+                                    <label for="node-select" class="">选择节点: </label>
+                                    <select class="form-control" id="node-select" name="node-select">
+                                        {% for key in nodeDict.keys() %}
+                                        <option value="{{ key }}" {% if key== selected_node %}selected{% endif %}>{{ key
+                                            }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+
+                                <div id="current-node" class="col-auto"> 当前节点: {{ currentNode }}</div>
+                                <div id="current-node-id" class="col-auto"> 节点ID: {{ nodeDict[currentNode] }}</div>
+
+                                <button type="button" class="btn btn-primary col-auto" id="btn_latest_block" data-toggle="modal" data-target="#latestBlockModal">
+                                  查看最新区块信息
+                                </button>
+
+                                <!-- Modal -->
+                                <div class="modal fade" id="latestBlockModal" tabindex="-1" role="dialog"
+                                     aria-labelledby="latestBlockModalLabel" aria-hidden="true" style="word-wrap: break-word;">
+                                    <div class="modal-dialog" role="document" style="width: 500px;">
+                                        <div class="modal-content" style="width: 100%;">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title" id="latestBlockModalLabel">最新区块信息</h5>
+                                                <button type="button" class="close" data-dismiss="modal"
+                                                        aria-label="Close">
+                                                    <span aria-hidden="true">&times;</span>
+                                                </button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <!-- 这里将显示区块信息 -->
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                                                    关闭
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </div>
+
+
+                        </div>
+                        <!--基本数据-->
+                        <div class="d-flex flex-row justify-content-center" style="margin: 10px;">
+                            <div class="col-4">
+                                <div class="card text-center">
+                                    <h6 class="card-header">节点数量</h6>
+                                    <div class="card-body">
+                                        <h5 class="card-title" id="show_peer_cnt"></h5>
+                                    </div>
+                                </div>
+                            </div>
+
+
+                            <div class="col-4">
+                                <div class="card text-center">
+                                    <h6 class="card-header">区块数量</h6>
+                                    <div class="card-body">
+                                        <h5 class="card-title" id="show_block_number"></h5>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-4">
+                                <div class="card text-center">
+                                    <h6 class="card-header">交易数量</h6>
+                                    <div class="card-body">
+                                        <h5 class="card-title" id="show_tx_cnt"></h5>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-4">
+                                <div class="card text-center">
+                                    <h6 class="card-header">交易池TPS</h6>
+                                    <div class="card-body">
+                                        <h5 class="card-title" id="show_txpool_tps"></h5>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!--区块&交易信息详细汇总-->
+                        <div class="panel-info d-flex flex-column align-items-center">
+                            <ul class="nav nav-tabs " style="width: 100%">
+                                <li class="nav-item" style="background: transparent;">
+                                    <a class="nav-link {% if active_tab == 'tab1' %}active{% endif %}"
+                                       href="{{ url_for('index', tab='tab1', page=1) }}">区块情况</a>
+                                </li>
+                                <li class="nav-item" style="background: transparent;">
+                                    <a class="nav-link {% if active_tab == 'tab2' %}active{% endif %}"
+                                       href="{{ url_for('index', tab='tab2', page=1) }}">交易情况</a>
+                                </li>
+                            </ul>
+
+                            {% if active_tab == 'tab1' %}
+                            <table class="table table-hover table-borderless ">
+                                <thead>
+                                <tr>
+                                    {% for col in data.columns %}
+                                    <th scope="col">{{ col }}</th>
+                                    {% endfor %}
+                                </tr>
+                                </thead>
+                                <tbody>
+                                {% for index, row in data.iterrows() %}
+                                <tr>
+                                    {% for col in data.columns %}
+                                    <td>{{ row[col] }}</td>
+                                    {% endfor %}
+                                </tr>
+                                {% endfor %}
+                                </tbody>
+                            </table>
+                            {{ pagination.links }}
+                            {% elif active_tab == 'tab2' %}
+                            <table class="table table-hover table-borderless ">
+                                <thead>
+                                <tr>
+                                    {% for col in data.columns %}
+                                    <th scope="col">{{ col }}</th>
+                                    {% endfor %}
+                                </tr>
+                                </thead>
+                                <tbody>
+                                {% for index, row in data.iterrows() %}
+                                <tr>
+                                    {% for col in data.columns %}
+                                    <td>{{ row[col] }}</td>
+                                    {% endfor %}
+                                </tr>
+                                {% endfor %}
+                                </tbody>
+                            </table>
+                            {{ pagination.links }}
+                            {% endif %}
+                        </div>
+
                     </div>
                 </div>
             </div>
@@ -283,40 +425,141 @@
     $(function () {
 
         // 获取最新配置
-        // $.ajax({
-        //     url:"http://127.0.0.1:5000/updateSwitch",
-        //     type: 'POST',
-        //     success: function(resp) {
-        //         console.log(resp);
-        //         if(resp.status === "success"){
-        //             // 更新开关状态
-        //             $('#All').prop('checked', resp.data["All"]);
-        //             $('#block_commit_duration_end').prop('checked', resp.data["block_commit_duration_end"]);
-        //             $('#block_commit_duration_start').prop('checked', resp.data["block_commit_duration_start"]);
-        //             $('#block_tx_conflict_rate').prop('checked', resp.data["block_tx_conflict_rate"]);
-        //             $('#block_validation_efficiency').prop('checked', resp.data["block_validation_efficiency"]);
-        //             $('#consensus_pbft_cost').prop('checked', resp.data["consensus_pbft_cost"]);
-        //             $('#consensus_raft_cost').prop('checked', resp.data["consensus_raft_cost"]);
-        //             $('#contract_time').prop('checked', resp.data["contract_time"]);
-        //             $('#db_state_read_rate').prop('checked', resp.data["db_state_read_rate"]);
-        //             $('#db_state_write_rate').prop('checked', resp.data["db_state_write_rate"]);
-        //             $('#net_p2p_transmission_latency').prop('checked', resp.data["net_p2p_transmission_latency"]);
-        //             $('#peer_message_throughput').prop('checked', resp.data["peer_message_throughput"]);
-        //             $('#transaction_pool_input_throughput').prop('checked', resp.data["transaction_pool_input_throughput"]);
-        //             $('#tx_delay_end').prop('checked', resp.data["tx_delay_end"]);
-        //             $('#tx_delay_start').prop('checked', resp.data["tx_delay_start"]);
-        //             $('#tx_in_block_tps').prop('checked', resp.data["tx_in_block_tps"]);
-        //             $('#tx_queue_delay').prop('checked', resp.data["tx_queue_delay"]);
-        //
-        //         }
-        //         else{
-        //             alert('请检查配置服务器是否运行');
-        //         }
-        //     },
-        //     error: function(xhr, status, error) {
-        //         alert('请检查配置服务器是否运行');
-        //     }
-        // });
+        $.ajax({
+            url:"http://127.0.0.1:5000/updateSwitch",
+            type: 'POST',
+            success: function(resp) {
+                console.log(resp);
+                if(resp.status === "success"){
+                    // 更新开关状态
+                    $('#All').prop('checked', resp.data["All"]);
+                    $('#block_commit_duration_end').prop('checked', resp.data["block_commit_duration_end"]);
+                    $('#block_commit_duration_start').prop('checked', resp.data["block_commit_duration_start"]);
+                    $('#block_tx_conflict_rate').prop('checked', resp.data["block_tx_conflict_rate"]);
+                    $('#block_validation_efficiency').prop('checked', resp.data["block_validation_efficiency"]);
+                    $('#consensus_pbft_cost').prop('checked', resp.data["consensus_pbft_cost"]);
+                    $('#consensus_raft_cost').prop('checked', resp.data["consensus_raft_cost"]);
+                    $('#contract_time').prop('checked', resp.data["contract_time"]);
+                    $('#db_state_read_rate').prop('checked', resp.data["db_state_read_rate"]);
+                    $('#db_state_write_rate').prop('checked', resp.data["db_state_write_rate"]);
+                    $('#net_p2p_transmission_latency').prop('checked', resp.data["net_p2p_transmission_latency"]);
+                    $('#peer_message_throughput').prop('checked', resp.data["peer_message_throughput"]);
+                    $('#transaction_pool_input_throughput').prop('checked', resp.data["transaction_pool_input_throughput"]);
+                    $('#tx_delay_end').prop('checked', resp.data["tx_delay_end"]);
+                    $('#tx_delay_start').prop('checked', resp.data["tx_delay_start"]);
+                    $('#tx_in_block_tps').prop('checked', resp.data["tx_in_block_tps"]);
+                    $('#tx_queue_delay').prop('checked', resp.data["tx_queue_delay"]);
+
+                }
+                else{
+                    alert('请检查配置服务器是否运行');
+                }
+            },
+            error: function(xhr, status, error) {
+                alert('请检查配置服务器是否运行');
+            }
+        });
+
+        // 切换节点
+        $('#node-select').change(function () {
+            var selectedNode = $(this).val();
+            $.ajax({
+                url: '/change_node',
+                type: 'POST',
+                data: {node_key: selectedNode},
+                success: function (response) {
+                    console.log("response", response);
+                    $('#current-node').text('当前节点: ' + response[0]);
+                    $('#current-node-id').text('节点ID: ' + response[1]);
+                }
+            });
+
+            // 修改配置服务器地址
+            let config_server = "127.0.0.1:" + (selectedNode.charAt(selectedNode.length - 1) - '0' + 9530).toString();
+            $.ajax({
+                type: "POST",
+                url: "http://127.0.0.1:5000/changeConfigServer",
+                data: config_server,
+                success: function () {
+                }
+            });
+
+            // 修改记录文件夹路径
+            let filepath = "/Users/bethestar/Downloads/myFiscoBcos/fisco/nodes/127.0.0.1/" + selectedNode + "/log_record";
+            $.ajax({
+                type: "POST",
+                url: "http://127.0.0.1:5000/changeFilepath",
+                data: filepath,
+                success: function (data) {
+                    location.reload();
+                }
+            });
+
+
+        });
+
+        // 查看最新区块信息
+        $('#btn_latest_block').click(function () {
+            $.ajax({
+                url: '/get_latest_block',
+                type: 'POST',
+                success: function (response) {
+                    var modalBody = $('#latestBlockModal .modal-body');
+                    modalBody.empty(); // 清空原有内容
+
+                    // 遍历返回的区块信息，并添加到模态框中
+                    $.each(response, function (key, value) {
+                        modalBody.append('<p><strong>' + key + ':</strong> ' + value + '</p>');
+                    });
+                },
+                error: function (error) {
+                    console.log(error);
+                }
+            });
+        });
+
+        // 四个卡片部分
+        // 获取区块高度、交易大小、交易池TPS
+        function getBlockNumber() {
+            $.post("/get_block_number", function (data) {
+                $("#show_block_number").text(data);
+            });
+        }
+
+        function getTransactionCount() {
+            $.post("/get_tx_cnt", function (data) {
+                $("#show_tx_cnt").text(data);
+            });
+        }
+
+        function getTxpoolTPS() {
+            $.post("/get_txpool_tps", function (data) {
+                $("#show_txpool_tps").text(data);
+            });
+        }
+
+        $(document).ready(function () {
+            // 获取节点数量（页面刷新时更新）
+            $.ajax({
+                url: "http://127.0.0.1:5000/get_peer_cnt",
+                type: 'POST',
+                success: function (data) {
+                    $("#show_peer_cnt").text(data);
+                },
+                error: function (xhr, status, error) {
+                    alert('请检查区块链网络是否运行或配置是否正确');
+                }
+            });
+            // 在页面加载时立即发送一次请求
+            getBlockNumber();
+            getTransactionCount();
+            getTxpoolTPS();
+        })
+
+        // 定时更新区块高度和交易数量（每隔3秒）
+        setInterval(getBlockNumber, 3000);
+        setInterval(getTransactionCount, 3000);
+        setInterval(getTxpoolTPS, 3000);
 
         $('#btn_submit_filepath').click(function () {
             let filepath = $('#input_filepath').val();
