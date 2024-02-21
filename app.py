@@ -4,6 +4,7 @@ import pandas as pd
 import requests
 import yaml
 from flask import Flask, render_template, request, jsonify
+from flask_paginate import Pagination, get_page_parameter
 
 from pyecharts import options as opts
 from pyecharts.charts import Bar, Line, Grid, Pie, Tab
@@ -12,12 +13,18 @@ from bs4 import BeautifulSoup
 from datetime import datetime
 from flask_cors import CORS
 
-app = Flask(__name__, template_folder='templates', static_folder='resource', static_url_path="/")
+import sys
+sys.path.append("./sdk")
+from sdk.client.bcosclient import BcosClient
 
+client = BcosClient()
+
+app = Flask(__name__, template_folder='templates', static_folder='resource', static_url_path="/")
 CORS(app, supports_credentials=True)
 
 filepath = "/Users/bethestar/Downloads/myFiscoBcos/fisco/nodes/127.0.0.1/node0/log_record"
 config_server = "127.0.0.1:9530"
+
 # 把pyecharts自动生成的完整html文件转化成能嵌入到展示小模块的代码
 def parse_html(html_content):
     soup = BeautifulSoup(html_content, "html.parser")
@@ -26,15 +33,22 @@ def parse_html(html_content):
     chart = "<div class=\"panel-draw d-flex flex-column justify-content-center align-items-center\" id=\"" + chart_id + "\"></div>"
     return chart, chart_js
 
+
 # 【针对有多个tab的情况】把pyecharts自动生成的完整html文件转化成能嵌入到展示小模块的代码
 def parse_html_tab(html_content):
     soup = BeautifulSoup(html_content, "html.parser")
     chart = soup.body
     return chart, ""
 
+
 # 截短过长的哈希值
 def shorten_id(node_id):
     return "0x" + node_id[:8] + "..."
+
+# 构建节点名到id的字典
+nodeIDs = client.getNodeIDList()
+nodeDict = {f'node{i}': shorten_id(node_id) for i, node_id in enumerate(nodeIDs)}
+currentNode = "node0"
 
 # 根据格式化好的时间计算duration（返回的时间不带's'结尾）
 def calculate_duration(end_time, start_time):
@@ -43,50 +57,193 @@ def calculate_duration(end_time, start_time):
     start_time = datetime.strptime(start_time, formatted_time)
     return (end_time - start_time).total_seconds()
 
-# ---统计分段及占比--
-def construct_bar_hist(df,num_bins,title_name):
-    # str转float
-    df = df.astype(float).round(6)
-    df = df[df >= 0]
+
+# 统计分段并生成CDF图
+def construct_cdf_chart(df, num_bins, title_name):
+    # 将数据转换为float类型
+    df = df.astype(float)
+    # 移除负数和NaN值
+    df = df[df >= 0].dropna()
     # 对数据进行分段
-    bin_edges = pd.cut(df, bins=num_bins, include_lowest=False)
+    bin_edges = pd.cut(df, bins=num_bins, include_lowest=True)
     # 统计每个分段的数量
     value_counts = bin_edges.value_counts(sort=False)
-    bar_hist = (
-        Bar()
-        .add_xaxis(value_counts.index.astype(str).tolist())
-        .add_yaxis(series_name="频数", y_axis=value_counts.tolist())
-        .set_global_opts(title_opts=opts.TitleOpts(title=title_name+"频数统计"),
-                         toolbox_opts=opts.ToolboxOpts(),
-                         datazoom_opts=[
-                             opts.DataZoomOpts(range_start=0, range_end=100),
-                         ],
-                         xaxis_opts=opts.AxisOpts(name=title_name+"区间"),
-                         yaxis_opts=opts.AxisOpts(name="频数"),
+    # 计算累积频数
+    cdf = value_counts.sort_index().cumsum()
+    # 计算累积频数的百分比
+    cdf_percent = cdf / cdf.iloc[-1] * 100
+
+    # 保证从原点开始绘制CDF
+    # 获取数据的最小值
+    min_value = df.min()
+    # 创建一个从0到最小值的区间，并将其累积分布百分比设为0
+    cdf_percent = pd.concat([pd.Series([0], index=[pd.Interval(0, min_value, closed='left')]), cdf_percent])
+
+    # 创建CDF图
+    cdf_chart = (
+        Line()
+        .add_xaxis(cdf_percent.index.astype(str).tolist())
+        .add_yaxis(series_name="累积分布",
+                   y_axis=cdf_percent.tolist(),
+                   areastyle_opts=opts.AreaStyleOpts(opacity=1, color="#173c8550"),
+                   # label_opts=opts.LabelOpts(formatter="{@[1]}%",position="bottom")  # 格式化标签并放在数据点下方
+
+                   label_opts=opts.LabelOpts(formatter=JsCode(
+                            """
+                            function (params) {
+                                console.log(params);
+                                return (params.value[1] * 1).toFixed(3) + '%';
+                            }
+                            """
+                        ), position="right")
+                   )
+        .set_global_opts(
+            title_opts=opts.TitleOpts(title=title_name + "累积分布函数"),
+            toolbox_opts=opts.ToolboxOpts(),
+            datazoom_opts=[opts.DataZoomOpts(range_start=0, range_end=100)],
+            xaxis_opts=opts.AxisOpts(name=title_name + "区间"),
+            yaxis_opts=opts.AxisOpts(name="累积分布百分比"),
+            tooltip_opts=opts.TooltipOpts(),
         )
     )
-    return bar_hist
+    return cdf_chart
+
+
 
 @app.route('/')
-def bigBoard():
-    return render_template("board.html")
+def index():
+    print("currentNode",currentNode)
+    # ---区块信息汇总---
+    df_start_commit = pd.read_csv(filepath + '/block_commit_duration_start.csv')
+    df_end_commit = pd.read_csv(filepath + '/block_commit_duration_end.csv')
+
+    df_start_commit = df_start_commit.rename(columns={'measure_time': '打包时刻'})
+    df_end_commit = df_end_commit.rename(columns={'measure_time': '落库时刻'})
+
+    df_commit = pd.merge(df_start_commit, df_end_commit, on='block_height')
+    df_commit.drop_duplicates(subset='block_height', keep='last', inplace=True)
+
+    df_commit.loc[:, 'block_hash'] = df_commit.loc[:, 'block_hash'].apply(lambda x: shorten_id(x))
+
+    df_valid = pd.read_csv(filepath + '/block_validation_efficiency.csv')
+    df = pd.merge(df_valid, df_commit, on='block_height')
+
+    df = df.dropna()
+
+    df.rename(columns={'start_time': '开始验证时刻'}, inplace=True)
+    df.rename(columns={'end_time': '结束验证时刻'}, inplace=True)
+    df.rename(columns={'block_height': '块高'}, inplace=True)
+    df.rename(columns={'block_hash': '区块哈希'}, inplace=True)
+    df.rename(columns={'block_tx_count_x': '交易数量'}, inplace=True)
+
+    df = df[['块高', '区块哈希', '交易数量', '打包时刻', '开始验证时刻', '结束验证时刻', '落库时刻']]
+    df = df.reindex(columns=['块高', '区块哈希', '交易数量', '打包时刻', '开始验证时刻', '结束验证时刻', '落库时刻'])
+
+    # ---交易信息汇总---
+    df_tx_queue = pd.read_csv(filepath + '/tx_queue_delay.csv')
+    df_in = df_tx_queue.loc[df_tx_queue['in/outFlag'] == 'in']
+    df_out = df_tx_queue.loc[df_tx_queue['in/outFlag'] == 'out']
+
+    df_in = df_in.rename(columns={'measure_time': '进入交易池时刻'})
+    df_out = df_out.rename(columns={'measure_time': '离开交易池时刻'})
+    df_tx_queue = pd.merge(df_in, df_out, on='tx_hash')
+
+    df_tx_block = pd.read_csv(filepath + '/tx_delay_end.csv')[['tx_hash', 'block_height']]
+    df_tx = pd.merge(df_tx_queue, df_tx_block, on='tx_hash')
+
+    df_tx.loc[:, 'tx_hash'] = df_tx.loc[:, 'tx_hash'].apply(lambda x: shorten_id(x))
+
+    df_tx.rename(columns={'block_height': '落库块高'}, inplace=True)
+    df_tx.rename(columns={'tx_hash': '交易哈希'}, inplace=True)
+
+    df_tx = df_tx[['交易哈希', '进入交易池时刻', '离开交易池时刻', '落库块高']]
+    df_tx = df_tx.reindex(columns=['交易哈希', '进入交易池时刻', '离开交易池时刻', '落库块高'])
+
+    # ---表格处理---
+    # 获取当前页码
+    page = request.args.get(get_page_parameter(), type=int, default=1)
+    # 每页显示的数据量
+    per_page = 5
+    # 获取当前选中的选项卡
+    active_tab = request.args.get('tab', 'tab1')
+    # 根据选中的选项卡切换数据帧
+    if active_tab == 'tab1':
+        data = df
+    elif active_tab == 'tab2':
+        data = df_tx
+    # 分页处理
+    pagination = Pagination(page=page, per_page=per_page, total=data.shape[0], css_framework='bootstrap4')
+
+    return render_template('board.html', data=data[(page - 1) * per_page:page * per_page], pagination=pagination,
+                           active_tab=active_tab, nodeDict=nodeDict, currentNode=currentNode)
+
+# 切换节点
+@app.route('/change_node', methods=['POST'])
+def change_node():
+    selected_node = request.form.get('node_key')
+    global currentNode
+    currentNode= selected_node
+    return currentNode, nodeDict.get(currentNode, '')
+
+# 获取最新区块信息
+@app.route('/get_latest_block', methods=['POST','GET'])
+def get_latest_block():
+    block_info = client.getBlockByNumber(client.getBlockNumber())
+    return jsonify(block_info)
+
+# 获取节点数量
+@app.route('/get_peer_cnt', methods=['POST','GET'])
+def get_peer_cnt():
+    return str(len(client.getNodeIDList()))
+
+# 获取区块数量
+@app.route('/get_block_number', methods=['POST','GET'])
+def get_block_number():
+    return str(client.getBlockNumber())
+
+# 获取交易数量
+@app.route('/get_tx_cnt', methods=['POST','GET'])
+def get_tx_cnt():
+    return str(int(client.getTotalTransactionCount()['txSum'],16))
+
+# 获取交易池tps
+@app.route('/get_txpool_tps', methods=['POST','GET'])
+def get_txpool_tps():
+    # 读取csv文件
+    df = pd.read_csv(filepath + "/transaction_pool_input_throughput.csv")
+    if len(df) <= 0:
+        return str(0)
+    sum_txs = df.shape[0]  # 当前记录的交易数
+    start_time = str(df.iloc[0]['measure_time'])  # 第一条的时间
+    end_time = str(df.iloc[-1]['measure_time'])  # 最后一条的时间
+    duration = calculate_duration(end_time, start_time)  # 总记录时间
+    return "%.2f" % (sum_txs / duration)
 
 # 修改记录文件夹路径
-@app.route('/changeFilepath', methods = ["POST"])
+@app.route('/changeFilepath', methods=["POST"])
 def change_filepath():
     input_path = request.get_data()
     global filepath
-    filepath =input_path.decode('utf-8')
-    print("new_path",filepath)
+    filepath = input_path.decode('utf-8')
+    print("new_path", filepath)
+    return "success"
+
+# 修改config_server地址
+@app.route('/changeConfigServer', methods=["POST"])
+def change_config_server():
+    input_path = request.get_data()
+    global config_server
+    config_server = input_path.decode('utf-8')
+    print("new_config_server", config_server)
     return "success"
 
 # 更新开关状态
-@app.route('/changeSwitch', methods = ["POST","GET","PUT"])
+@app.route('/changeSwitch', methods=["POST", "GET", "PUT"])
 def change_switch():
     info = request.get_json()
     global config_server
     config_server = info["server"]
-    url ='http://' +  config_server + '/config/accessconfig'
+    url = 'http://' + config_server + '/config/accessconfig'
     data = info["new_yaml"]
     headers = {'Content-Type': 'application/x-yaml'}
     response = requests.put(url, data=data, headers=headers)
@@ -96,10 +253,11 @@ def change_switch():
     else:
         return jsonify({'status': 'error'})
 
+
 # 获取最新的开关状态
-@app.route('/updateSwitch', methods = ["POST","GET","PUT"])
+@app.route('/updateSwitch', methods=["POST", "GET", "PUT"])
 def update_switch():
-    url ='http://' +  config_server + '/config/accessconfig'
+    url = 'http://' + config_server + '/config/accessconfig'
     response = requests.get(url)
     if response.status_code == 200:
         return jsonify({'status': 'success', 'data': yaml.safe_load(response.text)})
@@ -139,11 +297,12 @@ def get_peer_message_throughput():
         .set_global_opts(title_opts=opts.TitleOpts(title="节点收发消息总量-接收"),
                          toolbox_opts=opts.ToolboxOpts(),
                          visualmap_opts=opts.VisualMapOpts(
-                             min_ = min_value,
-                             max_ = max_value
+                             min_=min_value,
+                             max_=max_value
                          ),
                          datazoom_opts=[
-                             opts.DataZoomOpts(range_start=45, range_end=55),
+                             opts.DataZoomOpts(range_start=0, range_end=5, xaxis_index=0),
+                             opts.DataZoomOpts(range_start=10, range_end=15, xaxis_index=1),
                          ],
                          xaxis_opts=opts.AxisOpts(name="测量时刻"),
                          yaxis_opts=opts.AxisOpts(name="消息大小"),
@@ -157,10 +316,6 @@ def get_peer_message_throughput():
         .add_yaxis(series_name="P2P消息", y_axis=sent_p2p["message_size"].tolist(), is_smooth=True)
         .add_yaxis(series_name="Channel消息", y_axis=sent_channel["message_size"].tolist(), is_smooth=True)
         .set_global_opts(title_opts=opts.TitleOpts(title="节点收发消息总量-发送", pos_top="50%"),
-                         toolbox_opts=opts.ToolboxOpts(),
-                         datazoom_opts=[
-                             opts.DataZoomOpts(range_start=0, range_end=100),
-                         ],
                          xaxis_opts=opts.AxisOpts(name="测量时刻"),
                          yaxis_opts=opts.AxisOpts(name="消息大小"),
                          legend_opts=opts.LegendOpts(pos_left="center", pos_top="50%"),
@@ -249,6 +404,8 @@ def get_db_state_write_rate():
     data = new_df.to_dict('records')
     # 获取value中的最大值最小值
     min_value, max_value = 0, 100
+    # 拼接标注字符串
+    JsStr = "'数据库平均写入速率：" + str(new_df['value'].astype(float).mean()) + "秒/块'"
     if len(data) != 0:
         min_value = float(min(data, key=lambda x: x['value'])['value'])
         max_value = float(max(data, key=lambda x: x['value'])['value'])
@@ -279,6 +436,40 @@ def get_db_state_write_rate():
                                  """
                              )
                          ),
+                         graphic_opts=[
+                             opts.GraphicGroup(
+                                 graphic_item=opts.GraphicItem(right="20%", top="15%"),
+                                 children=[
+                                     opts.GraphicRect(
+                                         graphic_item=opts.GraphicItem(
+                                             z=100, left="center", top="middle"
+                                         ),
+                                         graphic_shape_opts=opts.GraphicShapeOpts(width=320, height=30),
+                                         graphic_basicstyle_opts=opts.GraphicBasicStyleOpts(
+                                             fill="#0b3a8a30",
+                                             shadow_blur=8,
+                                             shadow_offset_x=3,
+                                             shadow_offset_y=3,
+                                             shadow_color="rgba(0,0,0,0.3)",
+                                         ),
+                                     ),
+                                     opts.GraphicText(
+                                         graphic_item=opts.GraphicItem(
+                                             left="center", top="middle", z=100
+                                         ),
+                                         graphic_textstyle_opts=opts.GraphicTextStyleOpts(
+                                             text=JsCode(
+                                                 JsStr
+                                             ),
+                                             font="12px Microsoft YaHei",
+                                             graphic_basicstyle_opts=opts.GraphicBasicStyleOpts(
+                                                 fill="#333"
+                                             ),
+                                         ),
+                                     ),
+                                 ],
+                             )
+                         ],
                          )
     )
 
@@ -296,7 +487,7 @@ def get_db_state_read_rate():
         return render_template('draw.html', chart="<h2>当前文件尚无数据</h2>")
 
     # 使用loc选择特定列
-    new_df = df.loc[:, ['block_hash', 'read_duration','type']]
+    new_df = df.loc[:, ['block_hash', 'read_duration', 'type']]
     # 去掉'read_duration'列中的's'
     new_df.loc[:, 'read_duration'] = new_df.loc[:, 'read_duration'].str.replace('s', '')
     # 在'block_hash'列前添加'0x'
@@ -357,13 +548,14 @@ def get_db_state_read_rate():
         )
     )
 
-    bar_hist = construct_bar_hist(new_df['value'], 3, "数据库读取耗时")
+    bar_hist = construct_cdf_chart(new_df['value'], 3, "数据库读取耗时")
 
     tab = Tab()
     tab.add(bar.overlap(pie), "按时刻查看")
-    tab.add(bar_hist, "按频数查看")
+    tab.add(bar_hist, "按累计分布查看")
     chart, chart_js = parse_html_tab(tab.render_embed())
     return render_template('draw.html', chart=chart, chart_js=chart_js)
+
 
 # --共识层--
 # 每轮PBFT共识耗时
@@ -438,6 +630,7 @@ def get_consensus_pbft_cost():
     chart, chart_js = parse_html(bar.overlap(pie).render_embed())
     return render_template('draw.html', chart=chart, chart_js=chart_js)
 
+
 # 每轮Raft共识耗时
 @app.route("/ConsensusRaftCost")
 def get_consensus_raft_cost():
@@ -456,7 +649,7 @@ def get_consensus_raft_cost():
     # 将新的DataFrame转换为字典列表
     data = new_df.to_dict('records')
     # 获取value中的最大值最小值
-    min_value , max_value = 0 , 100
+    min_value, max_value = 0, 100
     if len(data) != 0:
         min_value = float(min(data, key=lambda x: x['value'])['value'])
         max_value = float(max(data, key=lambda x: x['value'])['value'])
@@ -493,6 +686,8 @@ def get_consensus_raft_cost():
 
     chart, chart_js = parse_html(bar.render_embed())
     return render_template('draw.html', chart=chart, chart_js=chart_js)
+
+
 # --合约层--
 # 合约执行时间
 @app.route("/ContractTime")
@@ -526,8 +721,8 @@ def get_contract_time():
         .set_global_opts(title_opts=opts.TitleOpts(title="合约执行时间"),
                          toolbox_opts=opts.ToolboxOpts(),
                          visualmap_opts=opts.VisualMapOpts(
-                             min_ = min_value,
-                             max_ = max_value
+                             min_=min_value,
+                             max_=max_value
                          ),
                          datazoom_opts=[
                              opts.DataZoomOpts(range_start=45, range_end=55),
@@ -565,11 +760,11 @@ def get_contract_time():
             ),
         )
     )
-    bar_hist = construct_bar_hist(new_df['value'], 5, "合约执行时间")
+    bar_hist = construct_cdf_chart(new_df['value'], 5, "合约执行时间")
 
     tab = Tab()
     tab.add(bar.overlap(pie), "按时刻查看")
-    tab.add(bar_hist, "按频数查看")
+    tab.add(bar_hist, "按累计分布查看")
     chart, chart_js = parse_html_tab(tab.render_embed())
     return render_template('draw.html', chart=chart, chart_js=chart_js)
 
@@ -610,8 +805,8 @@ def get_tx_delay():
         .set_global_opts(title_opts=opts.TitleOpts(title="交易延迟"),
                          toolbox_opts=opts.ToolboxOpts(),
                          visualmap_opts=opts.VisualMapOpts(
-                             min_ = min_value,
-                             max_ = max_value
+                             min_=min_value,
+                             max_=max_value
                          ),
                          datazoom_opts=[
                              opts.DataZoomOpts(range_start=45, range_end=55),
@@ -633,13 +828,14 @@ def get_tx_delay():
                          )
 
     )
-    bar_hist = construct_bar_hist(df['value'], 10, "交易延迟")
+    bar_cdf_hist = construct_cdf_chart(df['value'], 10, "交易延迟")
 
     tab = Tab()
     tab.add(bar, "按时刻查看")
-    tab.add(bar_hist, "按频数查看")
+    tab.add(bar_cdf_hist, "按累计分布查看")
     chart, chart_js = parse_html_tab(tab.render_embed())
     return render_template('draw.html', chart=chart, chart_js=chart_js)
+
 
 # 交易排队时延
 @app.route("/TxQueueDelay")
@@ -678,8 +874,8 @@ def get_tx_queue_delay():
         .set_global_opts(title_opts=opts.TitleOpts(title="交易排队时延"),
                          toolbox_opts=opts.ToolboxOpts(),
                          visualmap_opts=opts.VisualMapOpts(
-                             min_ = min_value,
-                             max_ = max_value
+                             min_=min_value,
+                             max_=max_value
                          ),
                          datazoom_opts=[
                              opts.DataZoomOpts(range_start=45, range_end=55),
@@ -700,13 +896,14 @@ def get_tx_queue_delay():
                          )
 
     )
-    bar_hist = construct_bar_hist(df['value'], 10, "交易排队时延")
+    bar_hist = construct_cdf_chart(df['value'], 10, "交易排队时延")
 
     tab = Tab()
     tab.add(bar, "按时刻查看")
-    tab.add(bar_hist, "按频数查看")
+    tab.add(bar_hist, "按累计分布查看")
     chart, chart_js = parse_html_tab(tab.render_embed())
     return render_template('draw.html', chart=chart, chart_js=chart_js)
+
 
 # 交易池输入通量
 @app.route("/TransactionPoolInputThroughput")
@@ -727,15 +924,15 @@ def get_transaction_pool_input_throughput():
     df['source'] = df['source'].replace({1: 'local', 2: 'rpc'})
 
     # 拼接标注字符串
-    JsStr = "['开始时间: " + start_time + "','结束时间: "+ end_time + "','总记录时间: "+ str(duration) + "s" "','交易数: "+ str(sum_txs) +"','交易池输入通量: " +str(txpool_input_throughput)+"'].join('\\n')"
+    JsStr = "['开始时间: " + start_time + "','结束时间: " + end_time + "','总记录时间: " + str(
+        duration) + "s" "','交易数: " + str(sum_txs) + "','交易池输入通量: " + str(
+        txpool_input_throughput) + "'].join('\\n')"
     type_counts = df["source"].value_counts()
     pie = (
         Pie()
         .add(
             series_name="交易来源",
             data_pair=[list(i) for i in type_counts.items()],  # 将Series转换为列表
-            # center=["80%", "25%"],
-            # radius="15%",
         )
         .set_global_opts(graphic_opts=[
             opts.GraphicGroup(
@@ -770,7 +967,7 @@ def get_transaction_pool_input_throughput():
                     ),
                 ],
             )
-        ],)
+        ], )
         .set_series_opts(
             tooltip_opts=opts.TooltipOpts(
                 trigger="item", formatter="{a} <br/>{b}: {c} ({d}%)"
@@ -778,9 +975,9 @@ def get_transaction_pool_input_throughput():
         )
     )
 
-
     chart, chart_js = parse_html(pie.render_embed())
     return render_template('draw.html', chart=chart, chart_js=chart_js)
+
 
 # 出块耗时
 @app.route("/BlockCommitDuration")
@@ -821,8 +1018,8 @@ def get_block_commit_duration():
         .set_global_opts(title_opts=opts.TitleOpts(title="当前节点出块耗时"),
                          toolbox_opts=opts.ToolboxOpts(),
                          visualmap_opts=opts.VisualMapOpts(
-                             min_ = min_value,
-                             max_ = max_value
+                             min_=min_value,
+                             max_=max_value
                          ),
                          datazoom_opts=[
                              opts.DataZoomOpts(range_start=45, range_end=55),
@@ -848,6 +1045,7 @@ def get_block_commit_duration():
     )
     chart, chart_js = parse_html(bar.render_embed())
     return render_template('draw.html', chart=chart, chart_js=chart_js)
+
 
 # 块内交易吞吐量
 @app.route("/TxInBlockTps")
@@ -887,8 +1085,8 @@ def get_tx_in_block_tps():
         .set_global_opts(title_opts=opts.TitleOpts(title="块内交易吞吐量"),
                          toolbox_opts=opts.ToolboxOpts(),
                          visualmap_opts=opts.VisualMapOpts(
-                             min_ = min_value,
-                             max_ = max_value
+                             min_=min_value,
+                             max_=max_value
                          ),
                          datazoom_opts=[
                              opts.DataZoomOpts(range_start=45, range_end=55),
@@ -915,6 +1113,7 @@ def get_tx_in_block_tps():
     )
     chart, chart_js = parse_html(bar.render_embed())
     return render_template('draw.html', chart=chart, chart_js=chart_js)
+
 
 # 块内交易冲突率
 @app.route("/BlockTxConflictRate")
@@ -960,8 +1159,8 @@ def get_block_tx_conflict_rate():
         .set_global_opts(title_opts=opts.TitleOpts(title="块内交易冲突率"),
                          toolbox_opts=opts.ToolboxOpts(),
                          visualmap_opts=opts.VisualMapOpts(
-                             min_ = min_value,
-                             max_ = max_value
+                             min_=min_value,
+                             max_=max_value
                          ),
                          datazoom_opts=[
                              opts.DataZoomOpts(range_start=45, range_end=55),
@@ -988,11 +1187,12 @@ def get_block_tx_conflict_rate():
     chart, chart_js = parse_html(bar.render_embed())
     return render_template('draw.html', chart=chart, chart_js=chart_js)
 
+
 # 区块验证效率
 @app.route("/BlockValidationEfficiency")
 def get_block_validation_efficiency():
     # 读取csv文件
-    df = pd.read_csv(filepath + '/block_validation_efficiency.csv')  # 打包完成时刻
+    df = pd.read_csv(filepath + '/block_validation_efficiency.csv')
     if len(df) <= 0:
         return render_template('draw.html', chart="<h2>当前文件尚无数据</h2>")
     # 计算时间差
@@ -1016,8 +1216,8 @@ def get_block_validation_efficiency():
         .set_global_opts(title_opts=opts.TitleOpts(title="区块验证效率"),
                          toolbox_opts=opts.ToolboxOpts(),
                          visualmap_opts=opts.VisualMapOpts(
-                             min_ = min_value,
-                             max_ = max_value
+                             min_=min_value,
+                             max_=max_value
                          ),
                          datazoom_opts=[
                              opts.DataZoomOpts(range_start=45, range_end=55),
@@ -1043,74 +1243,6 @@ def get_block_validation_efficiency():
     chart, chart_js = parse_html(bar.render_embed())
     return render_template('draw.html', chart=chart, chart_js=chart_js)
 
-
-# 增加分布---交易排队时延
-@app.route("/Try")
-def get_try():
-    # 读取csv文件
-    df = pd.read_csv(filepath + '/tx_queue_delay.csv')
-    if len(df) <= 0:
-        return render_template('draw.html', chart="<h2>当前文件尚无数据</h2>")
-    # 根据"in/outFlag"列的值选择行，并分别赋值给df_in和df_out
-    df_in = df.loc[df['in/outFlag'] == 'in']
-    df_out = df.loc[df['in/outFlag'] == 'out']
-    # 重命名列
-    df_in = df_in.rename(columns={'measure_time': 'start_time'})
-    df_out = df_out.rename(columns={'measure_time': 'end_time'})
-    # 合并df_in和df_out
-    df = pd.merge(df_in, df_out, on='tx_hash')
-    # 计算时间差
-    df['duration'] = df.apply(lambda row: calculate_duration(row['end_time'], row['start_time']), axis=1)
-    df = df[df['duration'] >= 0]
-
-    # 在'tx_hash'列前添加'0x'
-    df.loc[:, 'tx_hash'] = df.loc[:, 'tx_hash'].apply(lambda x: '0x' + str(x))
-    # 重命名'duration'列为'value'
-    df.rename(columns={'duration': 'value'}, inplace=True)
-    # 将新的DataFrame转换为字典列表
-    data = df.to_dict('records')
-    # 获取value中的最大值最小值
-    min_value, max_value = 0, 100
-    if len(data) != 0:
-        min_value = float(min(data, key=lambda x: x['value'])['value'])
-        max_value = float(max(data, key=lambda x: x['value'])['value'])
-    bar = (
-        Bar()
-        .add_xaxis(df["start_time"].tolist())
-        .add_yaxis(series_name="交易排队时延", y_axis=data)
-        .set_global_opts(title_opts=opts.TitleOpts(title="交易排队时延"),
-                         toolbox_opts=opts.ToolboxOpts(),
-                         visualmap_opts=opts.VisualMapOpts(
-                             min_ = min_value,
-                             max_ = max_value
-                         ),
-                         datazoom_opts=[
-                             opts.DataZoomOpts(range_start=45, range_end=55),
-                         ],
-                         xaxis_opts=opts.AxisOpts(name="进入交易池时刻"),
-                         yaxis_opts=opts.AxisOpts(name="交易排队时延/s"),
-                         tooltip_opts=opts.TooltipOpts(
-                             formatter=JsCode(
-                                 """
-                                 function (params) {
-                                     console.log(params);
-                                     return  '交易哈希:'+ params.data.tx_hash  + '</br>' +
-                                             '交易排队时延:'+ params.data.value+ 's' ;
-                                 }
-                                 """
-                             )
-                         ),
-        )
-
-    )
-
-    bar_hist = construct_bar_hist(df['value'],10,"交易排队时延")
-
-    tab = Tab()
-    tab.add(bar, "按时刻查看")
-    tab.add(bar_hist, "按频数查看")
-    chart, chart_js = parse_html_tab(tab.render_embed())
-    return render_template('draw.html', chart=chart, chart_js=chart_js)
 
 if __name__ == "__main__":
     app.run(debug=True)

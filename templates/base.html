@@ -15,12 +15,14 @@
 </head>
 
 <body>
-<div class="container-fluid d-flex justify-content-between align-items-center"
+<div class="container-fluid d-flex flex-column justify-content-between align-items-center"
      style="background:linear-gradient(135deg, rgba(102, 149, 212, 0.8), rgba(41, 234, 196, 0.8)) ;min-height: 100vh;">
+    <div class="d-flex flex-row justify-content-between" style="margin-top: 5px; width: 95%;">
+        <h4>面向FISCO-BCOS的区块链性能松耦合测量系统</h4>
+        <img src="images/ict.png" width="42" height="34.5" alt="">
+    </div>
+
     <div class="page-bg justify-content-center align-items-center">
-        <div>
-            <h4>面向FISCO-BCOS的区块链性能松耦合测量系统</h4>
-        </div>
 
         <div class="row position-relative d-flex flex-row justify-content-between align-items-center"
              style="height: 100%; width: 100%;">
@@ -185,7 +187,7 @@
                 <div class="col d-flex flex-column justify-content-center align-items-center ">
                     <aside class="" style="width: 100%;">
                         <nav class="navbar navbar-expand-lg navbar-light bg-light edit-nav">
-                            <a class="navbar-brand" href="#">
+                            <a class="navbar-brand" href="/">
                                 <img src="images/fisco_logo.svg" width="40" height="40" alt="">
                             </a>
                             <button class="navbar-toggler" type="button" data-toggle="collapse"
@@ -276,41 +278,41 @@
 <script>
     $(function(){
 
-        //  // 获取最新配置
-        // $.ajax({
-        //     url:"http://127.0.0.1:5000/updateSwitch",
-        //     type: 'POST',
-        //     success: function(resp) {
-        //         console.log(resp);
-        //         if(resp.status === "success"){
-        //             // 更新开关状态
-        //             $('#All').prop('checked', resp.data["All"]);
-        //             $('#block_commit_duration_end').prop('checked', resp.data["block_commit_duration_end"]);
-        //             $('#block_commit_duration_start').prop('checked', resp.data["block_commit_duration_start"]);
-        //             $('#block_tx_conflict_rate').prop('checked', resp.data["block_tx_conflict_rate"]);
-        //             $('#block_validation_efficiency').prop('checked', resp.data["block_validation_efficiency"]);
-        //             $('#consensus_pbft_cost').prop('checked', resp.data["consensus_pbft_cost"]);
-        //             $('#consensus_raft_cost').prop('checked', resp.data["consensus_raft_cost"]);
-        //             $('#contract_time').prop('checked', resp.data["contract_time"]);
-        //             $('#db_state_read_rate').prop('checked', resp.data["db_state_read_rate"]);
-        //             $('#db_state_write_rate').prop('checked', resp.data["db_state_write_rate"]);
-        //             $('#net_p2p_transmission_latency').prop('checked', resp.data["net_p2p_transmission_latency"]);
-        //             $('#peer_message_throughput').prop('checked', resp.data["peer_message_throughput"]);
-        //             $('#transaction_pool_input_throughput').prop('checked', resp.data["transaction_pool_input_throughput"]);
-        //             $('#tx_delay_end').prop('checked', resp.data["tx_delay_end"]);
-        //             $('#tx_delay_start').prop('checked', resp.data["tx_delay_start"]);
-        //             $('#tx_in_block_tps').prop('checked', resp.data["tx_in_block_tps"]);
-        //             $('#tx_queue_delay').prop('checked', resp.data["tx_queue_delay"]);
-        //
-        //         }
-        //         else{
-        //             alert('请检查配置服务器是否运行');
-        //         }
-        //     },
-        //     error: function(xhr, status, error) {
-        //         alert('请检查配置服务器是否运行');
-        //     }
-        // });
+         // 获取最新配置
+        $.ajax({
+            url:"http://127.0.0.1:5000/updateSwitch",
+            type: 'POST',
+            success: function(resp) {
+                console.log(resp);
+                if(resp.status === "success"){
+                    // 更新开关状态
+                    $('#All').prop('checked', resp.data["All"]);
+                    $('#block_commit_duration_end').prop('checked', resp.data["block_commit_duration_end"]);
+                    $('#block_commit_duration_start').prop('checked', resp.data["block_commit_duration_start"]);
+                    $('#block_tx_conflict_rate').prop('checked', resp.data["block_tx_conflict_rate"]);
+                    $('#block_validation_efficiency').prop('checked', resp.data["block_validation_efficiency"]);
+                    $('#consensus_pbft_cost').prop('checked', resp.data["consensus_pbft_cost"]);
+                    $('#consensus_raft_cost').prop('checked', resp.data["consensus_raft_cost"]);
+                    $('#contract_time').prop('checked', resp.data["contract_time"]);
+                    $('#db_state_read_rate').prop('checked', resp.data["db_state_read_rate"]);
+                    $('#db_state_write_rate').prop('checked', resp.data["db_state_write_rate"]);
+                    $('#net_p2p_transmission_latency').prop('checked', resp.data["net_p2p_transmission_latency"]);
+                    $('#peer_message_throughput').prop('checked', resp.data["peer_message_throughput"]);
+                    $('#transaction_pool_input_throughput').prop('checked', resp.data["transaction_pool_input_throughput"]);
+                    $('#tx_delay_end').prop('checked', resp.data["tx_delay_end"]);
+                    $('#tx_delay_start').prop('checked', resp.data["tx_delay_start"]);
+                    $('#tx_in_block_tps').prop('checked', resp.data["tx_in_block_tps"]);
+                    $('#tx_queue_delay').prop('checked', resp.data["tx_queue_delay"]);
+
+                }
+                else{
+                    alert('请检查配置服务器是否运行');
+                }
+            },
+            error: function(xhr, status, error) {
+                alert('请检查配置服务器是否运行');
+            }
+        });
 
         $('#btn_submit_filepath').click(function(){
             let filepath = $('#input_filepath').val();
