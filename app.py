@@ -213,11 +213,35 @@ def get_txpool_tps():
     df = pd.read_csv(filepath + "/transaction_pool_input_throughput.csv")
     if len(df) <= 0:
         return str(0)
-    sum_txs = df.shape[0]  # 当前记录的交易数
-    start_time = str(df.iloc[0]['measure_time'])  # 第一条的时间
-    end_time = str(df.iloc[-1]['measure_time'])  # 最后一条的时间
-    duration = calculate_duration(end_time, start_time)  # 总记录时间
-    return "%.2f" % (sum_txs / duration)
+
+    # 确定起始和结束索引
+    if len(df) >= 100:
+        start_index = -100
+    elif len(df) >= 50:
+        start_index = -50
+    elif len(df) >= 10:
+        start_index = -10
+    elif len(df) >= 5:
+        start_index = -5
+    elif len(df) >= 2:
+        start_index = -2
+    else:
+        return str(0)
+
+    # 获取最后几条数据
+    last_10_df = df.iloc[start_index:]
+    sum_txs = last_10_df.shape[0]  # 最后几条记录的交易数
+    start_time = str(last_10_df.iloc[0]['measure_time'])  # 最后几条记录中第一条的时间
+    end_time = str(df.iloc[-1]['measure_time'])  # 最后一条记录的时间
+    duration = calculate_duration(end_time, start_time)  # 最后几条记录的总记录时间
+
+    # 计算TPS
+    if duration > 0:
+        tps = sum_txs / duration
+    else:
+        tps = 0
+
+    return "%.2f" % tps
 
 # 修改记录文件夹路径
 @app.route('/changeFilepath', methods=["POST"])
