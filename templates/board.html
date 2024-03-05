@@ -557,9 +557,9 @@
         })
 
         // 定时更新区块高度和交易数量（每隔3秒）
-        setInterval(getBlockNumber, 3000);
-        setInterval(getTransactionCount, 3000);
-        setInterval(getTxpoolTPS, 3000);
+        setInterval(getBlockNumber, 500);
+        setInterval(getTransactionCount, 500);
+        setInterval(getTxpoolTPS, 500);
 
         $('#btn_submit_filepath').click(function () {
             let filepath = $('#input_filepath').val();
@@ -575,23 +575,23 @@
 
         $('#btn_submit_server').click(function () {
             // 获取元素的开闭状态
-            let All_status = $('input.form-check-input#All').prop('checked');
-            let block_commit_duration_end_status = $('input.form-check-input#block_commit_duration_end').prop('checked');
-            let block_commit_duration_start_status = $('input.form-check-input#block_commit_duration_start').prop('checked');
-            let block_tx_conflict_rate_status = $('input.form-check-input#block_tx_conflict_rate').prop('checked');
-            let block_validation_efficiency_status = $('input.form-check-input#block_validation_efficiency').prop('checked');
-            let consensus_pbft_cost_status = $('input.form-check-input#consensus_pbft_cost').prop('checked');
-            let consensus_raft_cost_status = $('input.form-check-input#consensus_raft_cost').prop('checked');
-            let contract_time_status = $('input.form-check-input#contract_time').prop('checked');
-            let db_state_read_rate_status = $('input.form-check-input#db_state_read_rate').prop('checked');
-            let db_state_write_rate_status = $('input.form-check-input#db_state_write_rate').prop('checked');
-            let net_p2p_transmission_latency_status = $('input.form-check-input#net_p2p_transmission_latency').prop('checked');
-            let peer_message_throughput_status = $('input.form-check-input#peer_message_throughput').prop('checked');
-            let transaction_pool_input_throughput_status = $('input.form-check-input#transaction_pool_input_throughput').prop('checked');
-            let tx_delay_end_status = $('input.form-check-input#tx_delay_end').prop('checked');
-            let tx_delay_start_status = $('input.form-check-input#tx_delay_start').prop('checked');
-            let tx_in_block_tps_status = $('input.form-check-input#tx_in_block_tps').prop('checked');
-            let tx_queue_delay_status = $('input.form-check-input#tx_queue_delay').prop('checked');
+            let All_status = $('#All').prop('checked');
+            let block_commit_duration_end_status = $('#block_commit_duration_end').prop('checked');
+            let block_commit_duration_start_status = $('#block_commit_duration_start').prop('checked');
+            let block_tx_conflict_rate_status = $('#block_tx_conflict_rate').prop('checked');
+            let block_validation_efficiency_status = $('#block_validation_efficiency').prop('checked');
+            let consensus_pbft_cost_status = $('#consensus_pbft_cost').prop('checked');
+            let consensus_raft_cost_status = $('#consensus_raft_cost').prop('checked');
+            let contract_time_status = $('#contract_time').prop('checked');
+            let db_state_read_rate_status = $('#db_state_read_rate').prop('checked');
+            let db_state_write_rate_status = $('#db_state_write_rate').prop('checked');
+            let net_p2p_transmission_latency_status = $('#net_p2p_transmission_latency').prop('checked');
+            let peer_message_throughput_status = $('#peer_message_throughput').prop('checked');
+            let transaction_pool_input_throughput_status = $('#transaction_pool_input_throughput').prop('checked');
+            let tx_delay_end_status = $('#tx_delay_end').prop('checked');
+            let tx_delay_start_status = $('#tx_delay_start').prop('checked');
+            let tx_in_block_tps_status = $('#tx_in_block_tps').prop('checked');
+            let tx_queue_delay_status = $('#tx_queue_delay').prop('checked');
 
             // 获取输入的地址
             let server = $('input#input_server').val();
@@ -628,10 +628,12 @@
                     if (response.status === "success") {
                         alert('发送并修改开关状态成功');
                     } else {
+                        console.log(response);
                         alert('请检查配置服务器是否运行');
                     }
                 },
                 error: function (xhr, status, error) {
+                    console.log(error);
                     alert('请检查配置服务器是否运行');
                 }
             });

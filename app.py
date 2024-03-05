@@ -215,7 +215,11 @@ def get_txpool_tps():
         return str(0)
 
     # 确定起始和结束索引
-    if len(df) >= 100:
+    if len(df) >= 500:
+        start_index = -500
+    elif len(df) >= 200:
+        start_index = -200
+    elif len(df) >= 100:
         start_index = -100
     elif len(df) >= 50:
         start_index = -50
@@ -264,9 +268,11 @@ def change_config_server():
 # 更新开关状态
 @app.route('/changeSwitch', methods=["POST", "GET", "PUT"])
 def change_switch():
-    info = request.get_json()
     global config_server
-    config_server = info["server"]
+    # 如果info["server"]不为空，才更新config_server
+    info = request.get_json()
+    if info["server"]!="":
+        config_server = info["server"]
     url = 'http://' + config_server + '/config/accessconfig'
     data = info["new_yaml"]
     headers = {'Content-Type': 'application/x-yaml'}
