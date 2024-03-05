@@ -1,465 +1,156 @@
-<!doctype html>
-<html>
+{% extends "base.html" %}
 
-<head>
-    <meta charset="utf-8">
-    <link rel="stylesheet" href="css/bootstrap.min.css" type="text/css"/>
-    <link rel="stylesheet" href="css/fine.css" type="text/css"/>
-    <script type="text/javascript" src="js/jquery-3.3.1.slim.min.js"></script>
-    <script type="text/javascript" src="js/jquery.js"></script>
-    <script type="text/javascript" src="js/bootstrap.min.js"></script>
-    <script type="text/javascript" src="js/popper.min.js"></script>
-    <script type="text/javascript" src="js/echarts.min.js"></script>
+{% block board_div %}
+<div class="d-flex flex-row justify-content-around" style="width: 100%">
+    <div class="form-inline">
+        <div class="form-inline">
+            <label for="node-select" class="">选择节点: </label>
+            <select class="form-control" id="node-select" name="node-select">
+                {% for key in nodeDict.keys() %}
+                <option value="{{ key }}" {% if key== selected_node %}selected{% endif %}>{{ key
+                    }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
 
-    <title>区块链性能测量结果</title>
-</head>
+        <div id="current-node" class="col-auto"> 当前节点: {{ currentNode }}</div>
+        <div id="current-node-id" class="col-auto"> 节点ID: {{ nodeDict[currentNode] }}</div>
 
+        <button type="button" class="btn btn-primary col-auto" id="btn_latest_block" data-toggle="modal" data-target="#latestBlockModal">
+          查看最新区块信息
+        </button>
 
-<body>
+        <!-- Modal -->
+        <div class="modal fade" id="latestBlockModal" tabindex="-1" role="dialog"
+             aria-labelledby="latestBlockModalLabel" aria-hidden="true" style="word-wrap: break-word;">
+            <div class="modal-dialog" role="document" style="width: 500px;">
+                <div class="modal-content" style="width: 100%;">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="latestBlockModalLabel">最新区块信息</h5>
+                        <button type="button" class="close" data-dismiss="modal"
+                                aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <!-- 这里将显示区块信息 -->
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                            关闭
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-<div class="container-fluid d-flex flex-column justify-content-between align-items-center"
-     style="background:linear-gradient(135deg, rgba(102, 149, 212, 0.8), rgba(41, 234, 196, 0.8)) ;min-height: 100vh;">
-    <div class="d-flex flex-row justify-content-between" style="margin-top: 5px; width: 95%;">
-        <h4>面向FISCO-BCOS的区块链性能松耦合测量系统</h4>
-        <img src="images/ict.png" width="42" height="34.5" alt="">
     </div>
 
-    <div class="page-bg justify-content-center align-items-center">
 
-        <div class="row position-relative d-flex flex-row justify-content-between align-items-center"
-             style="height: 100%; width: 100%;">
-            <div class="panel-left d-flex flex-column justify-content-center align-items-center  col-4">
-                <div class="col d-flex flex-column justify-content-center align-items-center bg-light "
-                     style="box-shadow:  1px 1px 15px 2px rgba(26, 26, 26, 0.13);border-radius: 10px;">
-                    <!--开关部分-->
-                    <div class="input-group" style="margin-bottom: 15px;">
-                        <input type="text" class="form-control" placeholder="自定义配置服务器地址" id="input_server">
-                        <div class="input-group-append">
-                            <button class="btn btn-outline-info" type="button" id="btn_submit_server">提交</button>
-                        </div>
-                    </div>
-
-
-                    <div class="d-flex flex-column align-items-center justify-content-center panel-switch">
-                        <table class="table table-sm table-borderless">
-                            <tbody>
-                            <tr>
-                                <td>
-                                    <div class="custom-control custom-switch panel-form">
-                                        <input type="checkbox" class="custom-control-input" id="All">
-                                        <label class="custom-control-label" for="All">全局</label>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>
-                                    <div class="custom-control custom-switch panel-form">
-                                        <input type="checkbox" class="custom-control-input"
-                                               id="block_commit_duration_start">
-                                        <label class="custom-control-label"
-                                               for="block_commit_duration_start">01.区块验证开始</label>
-                                    </div>
-                                </td>
-                                <td>
-                                    <div class="custom-control custom-switch panel-form">
-                                        <input type="checkbox" class="custom-control-input"
-                                               id="block_commit_duration_end">
-                                        <label class="custom-control-label"
-                                               for="block_commit_duration_end">02.区块验证结束</label>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>
-                                    <div class="custom-control custom-switch panel-form">
-                                        <input type="checkbox" class="custom-control-input" id="block_tx_conflict_rate">
-                                        <label class="custom-control-label"
-                                               for="block_tx_conflict_rate">03.块内交易冲突率</label>
-                                    </div>
-                                </td>
-                                <td>
-                                    <div class="custom-control custom-switch panel-form">
-                                        <input type="checkbox" class="custom-control-input"
-                                               id="block_validation_efficiency">
-                                        <label class="custom-control-label"
-                                               for="block_validation_efficiency">04.区块验证效率</label>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>
-                                    <div class="custom-control custom-switch panel-form">
-                                        <input type="checkbox" class="custom-control-input" id="consensus_pbft_cost">
-                                        <label class="custom-control-label"
-                                               for="consensus_pbft_cost">05.PBFT共识耗时</label>
-                                    </div>
-                                </td>
-                                <td>
-                                    <div class="custom-control custom-switch panel-form">
-                                        <input type="checkbox" class="custom-control-input" id="consensus_raft_cost">
-                                        <label class="custom-control-label"
-                                               for="consensus_raft_cost">06.Raft共识耗时</label>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>
-                                    <div class="custom-control custom-switch panel-form">
-                                        <input type="checkbox" class="custom-control-input" id="contract_time">
-                                        <label class="custom-control-label" for="contract_time">07.合约执行时间</label>
-                                    </div>
-                                </td>
-                                <td>
-                                    <div class="custom-control custom-switch panel-form">
-                                        <input type="checkbox" class="custom-control-input" id="db_state_read_rate">
-                                        <label class="custom-control-label"
-                                               for="db_state_read_rate">08.数据库读取速率</label>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>
-                                    <div class="custom-control custom-switch panel-form">
-                                        <input type="checkbox" class="custom-control-input" id="db_state_write_rate">
-                                        <label class="custom-control-label"
-                                               for="db_state_write_rate">09.数据库写入速率</label>
-                                    </div>
-                                </td>
-                                <td>
-                                    <div class="custom-control custom-switch panel-form">
-                                        <input type="checkbox" class="custom-control-input"
-                                               id="net_p2p_transmission_latency">
-                                        <label class="custom-control-label"
-                                               for="net_p2p_transmission_latency">10.P2P网络传播时延</label>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>
-                                    <div class="custom-control custom-switch panel-form">
-                                        <input type="checkbox" class="custom-control-input"
-                                               id="peer_message_throughput">
-                                        <label class="custom-control-label"
-                                               for="peer_message_throughput">11.节点收发消息总量</label>
-                                    </div>
-                                </td>
-                                <td>
-                                    <div class="custom-control custom-switch panel-form">
-                                        <input type="checkbox" class="custom-control-input"
-                                               id="transaction_pool_input_throughput">
-                                        <label class="custom-control-label"
-                                               for="transaction_pool_input_throughput">12.交易池输入通量</label>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>
-                                    <div class="custom-control custom-switch panel-form">
-                                        <input type="checkbox" class="custom-control-input" id="tx_delay_start">
-                                        <label class="custom-control-label" for="tx_delay_start">13.交易延迟开始</label>
-                                    </div>
-                                </td>
-                                <td>
-                                    <div class="custom-control custom-switch panel-form">
-                                        <input type="checkbox" class="custom-control-input" id="tx_delay_end">
-                                        <label class="custom-control-label" for="tx_delay_end">14.交易延迟结束</label>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>
-                                    <div class="custom-control custom-switch panel-form">
-                                        <input type="checkbox" class="custom-control-input" id="tx_queue_delay">
-                                        <label class="custom-control-label" for="tx_queue_delay">15.交易排队开始</label>
-                                    </div>
-                                </td>
-                                <td>
-                                    <div class="custom-control custom-switch panel-form">
-                                        <input type="checkbox" class="custom-control-input" id="tx_in_block_tps">
-                                        <label class="custom-control-label"
-                                               for="tx_in_block_tps">16.交易排队结束</label>
-                                    </div>
-                                </td>
-                            </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-
+</div>
+<!--基本数据-->
+<div class="d-flex flex-row justify-content-center" style="margin: 10px;">
+    <div class="col-4">
+        <div class="card text-center">
+            <h6 class="card-header">节点数量</h6>
+            <div class="card-body">
+                <h5 class="card-title" id="show_peer_cnt"></h5>
             </div>
-            <div class="panel-right col-8">
-                <div class="col d-flex flex-column justify-content-center align-items-center ">
-                    <aside class="" style="width: 100%;">
-                        <nav class="navbar navbar-expand-lg navbar-light bg-light edit-nav">
-                            <a class="navbar-brand" href="/">
-                                <img src="images/fisco_logo.svg" width="40" height="40" alt="">
-                            </a>
-                            <button class="navbar-toggler" type="button" data-toggle="collapse"
-                                    data-target="#navbarNavDropdown">
-                                <span class="navbar-toggler-icon"></span>
-                            </button>
-                            <div class="collapse navbar-collapse" id="navbarNavDropdown">
-                                <ul class="navbar-nav mr-auto mt-2 mt-lg-0">
-                                    <li class="nav-item dropdown">
-                                        <a class="nav-link dropdown-toggle active" href="#" data-toggle="dropdown">
-                                            网络层
-                                        </a>
-                                        <div class="dropdown-menu">
-                                            <a class="dropdown-item" href="/PeerMessageThroughput">节点收发消息总量</a>
-                                            <a class="dropdown-item"
-                                               href="/NetP2PTransmissionLatency">P2P网络平均传输时延</a>
-                                        </div>
-                                    </li>
-
-                                    <li class="nav-item dropdown">
-                                        <a class="nav-link dropdown-toggle active" href="#" data-toggle="dropdown">
-                                            数据层
-                                        </a>
-                                        <div class="dropdown-menu">
-                                            <a class="dropdown-item" href="/DBStateWriteRate">数据库写入速率</a>
-                                            <a class="dropdown-item" href="/DBStateReadRate">数据库读取速率</a>
-                                        </div>
-                                    </li>
-
-                                    <li class="nav-item dropdown">
-                                        <a class="nav-link dropdown-toggle active" href="#" data-toggle="dropdown">
-                                            共识层
-                                        </a>
-                                        <div class="dropdown-menu">
-                                            <a class="dropdown-item" href="/ConsensusPBFTCost">每轮PBFT共识耗时</a>
-                                            <a class="dropdown-item" href="/ConsensusRaftCost">每轮Raft共识耗时</a>
-                                        </div>
-                                    </li>
-
-                                    <li class="nav-item dropdown">
-                                        <a class="nav-link dropdown-toggle active" href="#" data-toggle="dropdown">
-                                            合约层
-                                        </a>
-                                        <div class="dropdown-menu">
-                                            <a class="dropdown-item" href="/ContractTime">合约执行时间</a>
-                                        </div>
-                                    </li>
-
-                                    <li class="nav-item dropdown">
-                                        <a class="nav-link dropdown-toggle active" href="#" data-toggle="dropdown">
-                                            交易生命周期
-                                        </a>
-                                        <div class="dropdown-menu">
-                                            <a class="dropdown-item" href="/TxDelay">交易延迟</a>
-                                            <a class="dropdown-item" href="/TxQueueDelay">交易排队时延</a>
-                                            <a class="dropdown-item"
-                                               href="/TransactionPoolInputThroughput">交易池输入通量</a>
-                                            <a class="dropdown-item" href="/BlockCommitDuration">出块耗时</a>
-                                            <a class="dropdown-item" href="/TxInBlockTps">块内交易吞吐量</a>
-                                            <a class="dropdown-item" href="/BlockTxConflictRate">块内交易冲突率</a>
-                                            <a class="dropdown-item" href="/BlockValidationEfficiency">区块验证效率</a>
-                                        </div>
-                                    </li>
-                                </ul>
-                            </div>
-                            <!--记录文件夹-->
-                            <div class="input-group">
-                                <input type="text" class="form-control" placeholder="自定义记录文件夹路径"
-                                       id="input_filepath">
-                                <div class="input-group-append">
-                                    <button class="btn btn-outline-info" type="button" id="btn_submit_filepath">确认
-                                    </button>
-                                </div>
-                            </div>
-                        </nav>
-                    </aside>
-                    <div class="d-flex flex-column justify-content-center align-items-center panel-show">
-                        <div class="d-flex flex-row justify-content-around" style="width: 100%">
-                            <div class="form-inline">
-                                <div class="form-inline">
-                                    <label for="node-select" class="">选择节点: </label>
-                                    <select class="form-control" id="node-select" name="node-select">
-                                        {% for key in nodeDict.keys() %}
-                                        <option value="{{ key }}" {% if key== selected_node %}selected{% endif %}>{{ key
-                                            }}
-                                        </option>
-                                        {% endfor %}
-                                    </select>
-                                </div>
-
-                                <div id="current-node" class="col-auto"> 当前节点: {{ currentNode }}</div>
-                                <div id="current-node-id" class="col-auto"> 节点ID: {{ nodeDict[currentNode] }}</div>
-
-                                <button type="button" class="btn btn-primary col-auto" id="btn_latest_block" data-toggle="modal" data-target="#latestBlockModal">
-                                  查看最新区块信息
-                                </button>
-
-                                <!-- Modal -->
-                                <div class="modal fade" id="latestBlockModal" tabindex="-1" role="dialog"
-                                     aria-labelledby="latestBlockModalLabel" aria-hidden="true" style="word-wrap: break-word;">
-                                    <div class="modal-dialog" role="document" style="width: 500px;">
-                                        <div class="modal-content" style="width: 100%;">
-                                            <div class="modal-header">
-                                                <h5 class="modal-title" id="latestBlockModalLabel">最新区块信息</h5>
-                                                <button type="button" class="close" data-dismiss="modal"
-                                                        aria-label="Close">
-                                                    <span aria-hidden="true">&times;</span>
-                                                </button>
-                                            </div>
-                                            <div class="modal-body">
-                                                <!-- 这里将显示区块信息 -->
-                                            </div>
-                                            <div class="modal-footer">
-                                                <button type="button" class="btn btn-secondary" data-dismiss="modal">
-                                                    关闭
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                            </div>
+        </div>
+    </div>
 
 
-                        </div>
-                        <!--基本数据-->
-                        <div class="d-flex flex-row justify-content-center" style="margin: 10px;">
-                            <div class="col-4">
-                                <div class="card text-center">
-                                    <h6 class="card-header">节点数量</h6>
-                                    <div class="card-body">
-                                        <h5 class="card-title" id="show_peer_cnt"></h5>
-                                    </div>
-                                </div>
-                            </div>
+    <div class="col-4">
+        <div class="card text-center">
+            <h6 class="card-header">区块数量</h6>
+            <div class="card-body">
+                <h5 class="card-title" id="show_block_number"></h5>
+            </div>
+        </div>
+    </div>
 
+    <div class="col-4">
+        <div class="card text-center">
+            <h6 class="card-header">交易数量</h6>
+            <div class="card-body">
+                <h5 class="card-title" id="show_tx_cnt"></h5>
+            </div>
+        </div>
+    </div>
 
-                            <div class="col-4">
-                                <div class="card text-center">
-                                    <h6 class="card-header">区块数量</h6>
-                                    <div class="card-body">
-                                        <h5 class="card-title" id="show_block_number"></h5>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="col-4">
-                                <div class="card text-center">
-                                    <h6 class="card-header">交易数量</h6>
-                                    <div class="card-body">
-                                        <h5 class="card-title" id="show_tx_cnt"></h5>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="col-4">
-                                <div class="card text-center">
-                                    <h6 class="card-header">交易池TPS</h6>
-                                    <div class="card-body">
-                                        <h5 class="card-title" id="show_txpool_tps"></h5>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!--区块&交易信息详细汇总-->
-                        <div class="panel-info d-flex flex-column align-items-center">
-                            <ul class="nav nav-tabs " style="width: 100%">
-                                <li class="nav-item" style="background: transparent;">
-                                    <a class="nav-link {% if active_tab == 'tab1' %}active{% endif %}"
-                                       href="{{ url_for('index', tab='tab1', page=1) }}">区块情况</a>
-                                </li>
-                                <li class="nav-item" style="background: transparent;">
-                                    <a class="nav-link {% if active_tab == 'tab2' %}active{% endif %}"
-                                       href="{{ url_for('index', tab='tab2', page=1) }}">交易情况</a>
-                                </li>
-                            </ul>
-
-                            {% if active_tab == 'tab1' %}
-                            <table class="table table-hover table-borderless ">
-                                <thead>
-                                <tr>
-                                    {% for col in data.columns %}
-                                    <th scope="col">{{ col }}</th>
-                                    {% endfor %}
-                                </tr>
-                                </thead>
-                                <tbody>
-                                {% for index, row in data.iterrows() %}
-                                <tr>
-                                    {% for col in data.columns %}
-                                    <td>{{ row[col] }}</td>
-                                    {% endfor %}
-                                </tr>
-                                {% endfor %}
-                                </tbody>
-                            </table>
-                            {{ pagination.links }}
-                            {% elif active_tab == 'tab2' %}
-                            <table class="table table-hover table-borderless ">
-                                <thead>
-                                <tr>
-                                    {% for col in data.columns %}
-                                    <th scope="col">{{ col }}</th>
-                                    {% endfor %}
-                                </tr>
-                                </thead>
-                                <tbody>
-                                {% for index, row in data.iterrows() %}
-                                <tr>
-                                    {% for col in data.columns %}
-                                    <td>{{ row[col] }}</td>
-                                    {% endfor %}
-                                </tr>
-                                {% endfor %}
-                                </tbody>
-                            </table>
-                            {{ pagination.links }}
-                            {% endif %}
-                        </div>
-
-                    </div>
-                </div>
+    <div class="col-4">
+        <div class="card text-center">
+            <h6 class="card-header">交易池TPS</h6>
+            <div class="card-body">
+                <h5 class="card-title" id="show_txpool_tps"></h5>
             </div>
         </div>
     </div>
 </div>
 
+<!--区块&交易信息详细汇总-->
+<div class="panel-info d-flex flex-column align-items-center">
+    <ul class="nav nav-tabs " style="width: 100%">
+        <li class="nav-item" style="background: transparent;">
+            <a class="nav-link {% if active_tab == 'tab1' %}active{% endif %}"
+               href="{{ url_for('index', tab='tab1', page=1) }}">区块情况</a>
+        </li>
+        <li class="nav-item" style="background: transparent;">
+            <a class="nav-link {% if active_tab == 'tab2' %}active{% endif %}"
+               href="{{ url_for('index', tab='tab2', page=1) }}">交易情况</a>
+        </li>
+    </ul>
+
+    {% if active_tab == 'tab1' %}
+    <table class="table table-hover table-borderless ">
+        <thead>
+        <tr>
+            {% for col in data.columns %}
+            <th scope="col">{{ col }}</th>
+            {% endfor %}
+        </tr>
+        </thead>
+        <tbody>
+        {% for index, row in data.iterrows() %}
+        <tr>
+            {% for col in data.columns %}
+            <td>{{ row[col] }}</td>
+            {% endfor %}
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {{ pagination.links }}
+    {% elif active_tab == 'tab2' %}
+    <table class="table table-hover table-borderless ">
+        <thead>
+        <tr>
+            {% for col in data.columns %}
+            <th scope="col">{{ col }}</th>
+            {% endfor %}
+        </tr>
+        </thead>
+        <tbody>
+        {% for index, row in data.iterrows() %}
+        <tr>
+            {% for col in data.columns %}
+            <td>{{ row[col] }}</td>
+            {% endfor %}
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {{ pagination.links }}
+    {% endif %}
+</div>
+
+{% endblock %}
+
+
+{% block board_script %}
 <script>
     $(function () {
-
-        // 获取最新配置
-        $.ajax({
-            url:"http://127.0.0.1:5000/updateSwitch",
-            type: 'POST',
-            success: function(resp) {
-                console.log(resp);
-                if(resp.status === "success"){
-                    // 更新开关状态
-                    $('#All').prop('checked', resp.data["All"]);
-                    $('#block_commit_duration_end').prop('checked', resp.data["block_commit_duration_end"]);
-                    $('#block_commit_duration_start').prop('checked', resp.data["block_commit_duration_start"]);
-                    $('#block_tx_conflict_rate').prop('checked', resp.data["block_tx_conflict_rate"]);
-                    $('#block_validation_efficiency').prop('checked', resp.data["block_validation_efficiency"]);
-                    $('#consensus_pbft_cost').prop('checked', resp.data["consensus_pbft_cost"]);
-                    $('#consensus_raft_cost').prop('checked', resp.data["consensus_raft_cost"]);
-                    $('#contract_time').prop('checked', resp.data["contract_time"]);
-                    $('#db_state_read_rate').prop('checked', resp.data["db_state_read_rate"]);
-                    $('#db_state_write_rate').prop('checked', resp.data["db_state_write_rate"]);
-                    $('#net_p2p_transmission_latency').prop('checked', resp.data["net_p2p_transmission_latency"]);
-                    $('#peer_message_throughput').prop('checked', resp.data["peer_message_throughput"]);
-                    $('#transaction_pool_input_throughput').prop('checked', resp.data["transaction_pool_input_throughput"]);
-                    $('#tx_delay_end').prop('checked', resp.data["tx_delay_end"]);
-                    $('#tx_delay_start').prop('checked', resp.data["tx_delay_start"]);
-                    $('#tx_in_block_tps').prop('checked', resp.data["tx_in_block_tps"]);
-                    $('#tx_queue_delay').prop('checked', resp.data["tx_queue_delay"]);
-
-                }
-                else{
-                    alert('请检查配置服务器是否运行');
-                }
-            },
-            error: function(xhr, status, error) {
-                alert('请检查配置服务器是否运行');
-            }
-        });
-
         // 切换节点
         $('#node-select').change(function () {
             var selectedNode = $(this).val();
@@ -560,92 +251,7 @@
         setInterval(getBlockNumber, 500);
         setInterval(getTransactionCount, 500);
         setInterval(getTxpoolTPS, 500);
-
-        $('#btn_submit_filepath').click(function () {
-            let filepath = $('#input_filepath').val();
-            $.ajax({
-                type: "POST",
-                url: "http://127.0.0.1:5000/changeFilepath",
-                data: filepath,
-                success: function (data) {
-                    location.reload();
-                }
-            })
-        });
-
-        $('#btn_submit_server').click(function () {
-            // 获取元素的开闭状态
-            let All_status = $('#All').prop('checked');
-            let block_commit_duration_end_status = $('#block_commit_duration_end').prop('checked');
-            let block_commit_duration_start_status = $('#block_commit_duration_start').prop('checked');
-            let block_tx_conflict_rate_status = $('#block_tx_conflict_rate').prop('checked');
-            let block_validation_efficiency_status = $('#block_validation_efficiency').prop('checked');
-            let consensus_pbft_cost_status = $('#consensus_pbft_cost').prop('checked');
-            let consensus_raft_cost_status = $('#consensus_raft_cost').prop('checked');
-            let contract_time_status = $('#contract_time').prop('checked');
-            let db_state_read_rate_status = $('#db_state_read_rate').prop('checked');
-            let db_state_write_rate_status = $('#db_state_write_rate').prop('checked');
-            let net_p2p_transmission_latency_status = $('#net_p2p_transmission_latency').prop('checked');
-            let peer_message_throughput_status = $('#peer_message_throughput').prop('checked');
-            let transaction_pool_input_throughput_status = $('#transaction_pool_input_throughput').prop('checked');
-            let tx_delay_end_status = $('#tx_delay_end').prop('checked');
-            let tx_delay_start_status = $('#tx_delay_start').prop('checked');
-            let tx_in_block_tps_status = $('#tx_in_block_tps').prop('checked');
-            let tx_queue_delay_status = $('#tx_queue_delay').prop('checked');
-
-            // 获取输入的地址
-            let server = $('input#input_server').val();
-
-            // 构造要发送的数据
-            let new_yaml = "All: " + All_status + "\n"
-                + "block_commit_duration_end: " + block_commit_duration_end_status + "\n"
-                + "block_commit_duration_start: " + block_commit_duration_start_status + "\n"
-                + "block_tx_conflict_rate: " + block_tx_conflict_rate_status + "\n"
-                + "block_validation_efficiency: " + block_validation_efficiency_status + "\n"
-                + "consensus_pbft_cost: " + consensus_pbft_cost_status + "\n"
-                + "consensus_raft_cost: " + consensus_raft_cost_status + "\n"
-                + "contract_time: " + contract_time_status + "\n"
-                + "db_state_read_rate: " + db_state_read_rate_status + "\n"
-                + "db_state_write_rate: " + db_state_write_rate_status + "\n"
-                + "net_p2p_transmission_latency: " + net_p2p_transmission_latency_status + "\n"
-                + "peer_message_throughput: " + peer_message_throughput_status + "\n"
-                + "transaction_pool_input_throughput: " + transaction_pool_input_throughput_status + "\n"
-                + "tx_delay_end: " + tx_delay_end_status + "\n"
-                + "tx_delay_start: " + tx_delay_start_status + "\n"
-                + "tx_in_block_tps: " + tx_in_block_tps_status + "\n"
-                + "tx_queue_delay: " + tx_queue_delay_status
-
-            // 发送POST请求，把url和当前选择传给后端
-            $.ajax({
-                url: "http://127.0.0.1:5000/changeSwitch",
-                type: 'POST',
-                data: JSON.stringify({
-                    server: server,
-                    new_yaml: new_yaml
-                }),
-                contentType: 'application/json',
-                success: function (response) {
-                    if (response.status === "success") {
-                        alert('发送并修改开关状态成功');
-                    } else {
-                        console.log(response);
-                        alert('请检查配置服务器是否运行');
-                    }
-                },
-                error: function (xhr, status, error) {
-                    console.log(error);
-                    alert('请检查配置服务器是否运行');
-                }
-            });
-
-        })
-
     });
 </script>
 
-
-{% block chart_script %}
 {% endblock %}
-
-</body>
-</html>
