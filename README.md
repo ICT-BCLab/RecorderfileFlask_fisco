@@ -2,7 +2,7 @@
 
 ## 简介
 
-该系统为面向FISCO-BCOS的松耦合区块链性能测量框架的展示模块部分，基于Flask与PyEcharts开发了便于用户查看性能指标测量结果统计、操作性能指标开关的界面，基于FISCO-BCOS官方的[Python SDK]([Python SDK — FISCO BCOS 2.0 v2.9.0 文档 (fisco-bcos-documentation.readthedocs.io)](https://fisco-bcos-documentation.readthedocs.io/zh-cn/latest/docs/sdk/python_sdk/index.html))开发了查看网络概览信息的大屏页面。
+该系统为面向FISCO-BCOS的松耦合区块链性能测量框架的展示模块部分，基于Flask与PyEcharts开发了便于用户查看性能指标测量结果统计、操作性能指标开关的界面，基于FISCO-BCOS官方的[Python SDK](https://fisco-bcos-documentation.readthedocs.io/zh-cn/latest/docs/sdk/python_sdk/index.html)开发了查看网络概览信息的大屏页面。
 
 ## 系统组成
 
