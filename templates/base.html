@@ -1,0 +1,353 @@
+<!doctype html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="css/bootstrap.min.css" type="text/css"/>
+    <link rel="stylesheet" href="css/fine.css" type="text/css"/>
+    <script type="text/javascript" src="js/jquery-3.3.1.slim.min.js"></script>
+    <script type="text/javascript" src="js/jquery.js"></script>
+    <script type="text/javascript" src="js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="js/popper.min.js"></script>
+    <script type="text/javascript" src="js/echarts.min.js"></script>
+
+    <title>区块链性能测量结果</title>
+</head>
+
+<body>
+<div class="container-fluid d-flex flex-column justify-content-between align-items-center"
+     style="background-image: url('images/bg.png');min-height: 100vh;">
+    <div class="d-flex flex-row justify-content-between" style="margin-top: 5px; width: 95%;">
+<!--        <h4>面向FISCO-BCOS的区块链性能松耦合测量系统</h4>-->
+                <!-- <h4>“网-信-安”一体多指标性能体系可度量性与多层级协同优化策略生成验证系统&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</h4>
+        <h4 style="color: gray">软件版本：V1.0</h4>
+        <img src="images/ict.png" width="42" height="34.5" alt=""> -->
+    </div>
+
+    <div class="page-bg justify-content-center align-items-center">
+
+        <div class="row position-relative d-flex flex-row justify-content-center align-items-center"
+             style="height: 100%; width: 100%;">
+             <!--开关部分-->
+            <div class="panel-left d-flex flex-column justify-content-center align-items-center  col-4">
+                <div class="col d-flex flex-column justify-content-center align-items-center "
+                     style="box-shadow:  1px 1px 15px 2px rgba(26, 26, 26, 0.13);border-radius: 10px;background-color: rgb(171, 211, 250) !important">
+                    
+                    <div class="d-flex justify-content-center" style="margin-bottom: 15px; width: 100%;">
+                        <button class="btn btn-outline-info" type="button" id="btn_submit_server" style="width: 100%;">提交配置</button>
+                    </div>
+
+                    <div class="d-flex flex-column align-items-center justify-content-center panel-switch">
+                        <table class="table table-sm table-borderless">
+                            <tbody>
+                            <tr>
+                                <td>
+                                    <div class="custom-control custom-switch panel-form">
+                                        <input type="checkbox" class="custom-control-input" id="All" checked>
+                                        <label class="custom-control-label" for="All">全局</label>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="custom-control custom-switch panel-form">
+                                        <input type="checkbox" class="custom-control-input"
+                                               id="block_commit_duration_start" checked>
+                                        <label class="custom-control-label"
+                                               for="block_commit_duration_start">01.区块验证开始</label>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="custom-control custom-switch panel-form">
+                                        <input type="checkbox" class="custom-control-input"
+                                               id="block_commit_duration_end" checked>
+                                        <label class="custom-control-label"
+                                               for="block_commit_duration_end">02.区块验证结束</label>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="custom-control custom-switch panel-form">
+                                        <input type="checkbox" class="custom-control-input" id="block_tx_conflict_rate" checked>
+                                        <label class="custom-control-label"
+                                               for="block_tx_conflict_rate">03.块内交易冲突率</label>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="custom-control custom-switch panel-form">
+                                        <input type="checkbox" class="custom-control-input"
+                                               id="block_validation_efficiency" checked>
+                                        <label class="custom-control-label"
+                                               for="block_validation_efficiency">04.区块验证效率</label>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="custom-control custom-switch panel-form">
+                                        <input type="checkbox" class="custom-control-input" id="consensus_pbft_cost" checked>
+                                        <label class="custom-control-label"
+                                               for="consensus_pbft_cost">05.PBFT共识耗时</label>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="custom-control custom-switch panel-form">
+                                        <input type="checkbox" class="custom-control-input" id="consensus_raft_cost" checked>
+                                        <label class="custom-control-label"
+                                               for="consensus_raft_cost">06.Raft共识耗时</label>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="custom-control custom-switch panel-form">
+                                        <input type="checkbox" class="custom-control-input" id="contract_time" checked>
+                                        <label class="custom-control-label" for="contract_time">07.合约执行时间</label>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="custom-control custom-switch panel-form">
+                                        <input type="checkbox" class="custom-control-input" id="db_state_read_rate" checked>
+                                        <label class="custom-control-label"
+                                               for="db_state_read_rate">08.数据层读取速率</label>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="custom-control custom-switch panel-form">
+                                        <input type="checkbox" class="custom-control-input" id="db_state_write_rate" checked>
+                                        <label class="custom-control-label"
+                                               for="db_state_write_rate">09.数据层写入速率</label>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="custom-control custom-switch panel-form">
+                                        <input type="checkbox" class="custom-control-input"
+                                               id="net_p2p_transmission_latency" checked>
+                                        <label class="custom-control-label"
+                                               for="net_p2p_transmission_latency">10.P2P网络传播时延</label>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="custom-control custom-switch panel-form">
+                                        <input type="checkbox" class="custom-control-input"
+                                               id="peer_message_throughput" checked>
+                                        <label class="custom-control-label"
+                                               for="peer_message_throughput">11.节点收发消息总量</label>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="custom-control custom-switch panel-form">
+                                        <input type="checkbox" class="custom-control-input"
+                                               id="transaction_pool_input_throughput" checked>
+                                        <label class="custom-control-label"
+                                               for="transaction_pool_input_throughput">12.交易池输入通量</label>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="custom-control custom-switch panel-form">
+                                        <input type="checkbox" class="custom-control-input" id="tx_delay_start" checked>
+                                        <label class="custom-control-label" for="tx_delay_start">13.交易延迟开始</label>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="custom-control custom-switch panel-form">
+                                        <input type="checkbox" class="custom-control-input" id="tx_delay_end" checked>
+                                        <label class="custom-control-label" for="tx_delay_end">14.交易延迟结束</label>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="custom-control custom-switch panel-form">
+                                        <input type="checkbox" class="custom-control-input" id="tx_queue_delay" checked>
+                                        <label class="custom-control-label" for="tx_queue_delay">15.交易排队开始</label>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="custom-control custom-switch panel-form">
+                                        <input type="checkbox" class="custom-control-input" id="tx_in_block_tps" checked>
+                                        <label class="custom-control-label"
+                                               for="tx_in_block_tps">16.交易排队结束</label>
+                                    </div>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="panel-right col-8">
+                <div class="col d-flex flex-column justify-content-center align-items-center ">
+                    <aside class="" style="width: 100%;  ">
+                        <nav class="navbar navbar-expand-lg navbar-light bg-light edit-nav" style="background-color: rgb(171, 211, 250) !important">
+                            <a class="navbar-brand" href="/">
+                                <img src="images/fisco_logo.svg" width="40" height="40" alt="">
+                            </a>
+                            <button class="navbar-toggler" type="button" data-toggle="collapse"
+                                    data-target="#navbarNavDropdown">
+                                <span class="navbar-toggler-icon"></span>
+                            </button>
+                            <div class="collapse navbar-collapse" id="navbarNavDropdown">
+                                <ul class="navbar-nav mr-auto mt-2 mt-lg-0">
+                                    <li class="nav-item dropdown">
+                                        <a class="nav-link dropdown-toggle active" href="#" data-toggle="dropdown">
+                                            网络层
+                                        </a>
+                                        <div class="dropdown-menu">
+                                            <a class="dropdown-item" href="/PeerMessageThroughput">节点收发消息总量</a>
+                                            <a class="dropdown-item"
+                                               href="/NetP2PTransmissionLatency">P2P网络平均传输时延</a>
+                                        </div>
+                                    </li>
+
+                                    <li class="nav-item dropdown">
+                                        <a class="nav-link dropdown-toggle active" href="#" data-toggle="dropdown">
+                                            数据层
+                                        </a>
+                                        <div class="dropdown-menu">
+                                            <a class="dropdown-item" href="/DBStateWriteRate">数据层写入速率</a>
+                                            <a class="dropdown-item" href="/DBStateReadRate">数据层读取速率</a>
+                                        </div>
+                                    </li>
+
+                                    <li class="nav-item dropdown">
+                                        <a class="nav-link dropdown-toggle active" href="#" data-toggle="dropdown">
+                                            共识层
+                                        </a>
+                                        <div class="dropdown-menu">
+                                            <a class="dropdown-item" href="/ConsensusPBFTCost">每轮PBFT共识耗时</a>
+                                            <!-- <a class="dropdown-item" href="/ConsensusRaftCost">每轮Raft共识耗时</a> -->
+                                        </div>
+                                    </li>
+
+                                    <li class="nav-item dropdown">
+                                        <a class="nav-link dropdown-toggle active" href="#" data-toggle="dropdown">
+                                            合约层
+                                        </a>
+                                        <div class="dropdown-menu">
+                                            <a class="dropdown-item" href="/ContractTime">合约执行时间</a>
+                                        </div>
+                                    </li>
+
+                                    <li class="nav-item dropdown">
+                                        <a class="nav-link dropdown-toggle active" href="#" data-toggle="dropdown">
+                                            交易生命周期
+                                        </a>
+                                        <div class="dropdown-menu">
+                                            <a class="dropdown-item" href="/TxDelay">交易延迟</a>
+                                            <a class="dropdown-item" href="/TxQueueDelay">交易排队延迟</a>
+                                            <a class="dropdown-item"
+                                               href="/TransactionPoolInputThroughput">交易池输入通量</a>
+                                            <a class="dropdown-item" href="/BlockCommitDuration">出块耗时</a>
+                                            <a class="dropdown-item" href="/TxInBlockTps">块内交易吞吐量</a>
+                                            <a class="dropdown-item" href="/BlockTxConflictRate">块内交易冲突率</a>
+                                            <a class="dropdown-item" href="/BlockValidationEfficiency">区块验证效率</a>
+                                        </div>
+                                    </li>
+                                </ul>
+                            </div>
+                            <!--记录文件夹-->
+                            <!-- <div class="input-group">
+                                <input type="text" class="form-control" placeholder="自定义记录文件夹路径"
+                                       id="input_filepath">
+                                <div class="input-group-append">
+                                    <button class="btn btn-outline-info" type="button" id="btn_submit_filepath">确认
+                                    </button>
+                                </div>
+                            </div> -->
+                        </nav>
+                    </aside>
+                    <div class="d-flex flex-column justify-content-center align-items-center panel-show"
+                         id="chart-show"
+                         style="background-color: rgb(228, 241, 255) !important">
+                        {% block chart_div %}
+                        {% endblock %}
+
+                        {% block board_div %}
+                        {% endblock %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    $(function(){
+
+         // 获取最新配置
+
+        $('#btn_submit_filepath').click(function(){
+            let filepath = $('#input_filepath').val();
+            $.ajax({
+                type:"POST",
+                url:"http://127.0.0.1:5000/changeFilepath",
+                data: filepath,
+                success:function (data){
+                    location.reload();
+                }
+            })
+        });
+
+        $('#btn_submit_server').click(function () {
+            // 获取元素的开闭状态
+            let All_status = $('#All').prop('checked');
+            let block_commit_duration_end_status = $('#block_commit_duration_end').prop('checked');
+            let block_commit_duration_start_status = $('#block_commit_duration_start').prop('checked');
+            let block_tx_conflict_rate_status = $('#block_tx_conflict_rate').prop('checked');
+            let block_validation_efficiency_status = $('#block_validation_efficiency').prop('checked');
+            let consensus_pbft_cost_status = $('#consensus_pbft_cost').prop('checked');
+            let consensus_raft_cost_status = $('#consensus_raft_cost').prop('checked');
+            let contract_time_status = $('#contract_time').prop('checked');
+            let db_state_read_rate_status = $('#db_state_read_rate').prop('checked');
+            let db_state_write_rate_status = $('#db_state_write_rate').prop('checked');
+            let net_p2p_transmission_latency_status = $('#net_p2p_transmission_latency').prop('checked');
+            let peer_message_throughput_status = $('#peer_message_throughput').prop('checked');
+            let transaction_pool_input_throughput_status = $('#transaction_pool_input_throughput').prop('checked');
+            let tx_delay_end_status = $('#tx_delay_end').prop('checked');
+            let tx_delay_start_status = $('#tx_delay_start').prop('checked');
+            let tx_in_block_tps_status = $('#tx_in_block_tps').prop('checked');
+            let tx_queue_delay_status = $('#tx_queue_delay').prop('checked');
+
+            // 获取输入的地址
+            let server = $('input#input_server').val();
+
+            // 构造要发送的数据
+            let new_yaml = "All: " + All_status + "\n"
+                + "block_commit_duration_end: " + block_commit_duration_end_status + "\n"
+                + "block_commit_duration_start: " + block_commit_duration_start_status + "\n"
+                + "block_tx_conflict_rate: " + block_tx_conflict_rate_status + "\n"
+                + "block_validation_efficiency: " + block_validation_efficiency_status + "\n"
+                + "consensus_pbft_cost: " + consensus_pbft_cost_status + "\n"
+                + "consensus_raft_cost: " + consensus_raft_cost_status + "\n"
+                + "contract_time: " + contract_time_status + "\n"
+                + "db_state_read_rate: " + db_state_read_rate_status + "\n"
+                + "db_state_write_rate: " + db_state_write_rate_status + "\n"
+                + "net_p2p_transmission_latency: " + net_p2p_transmission_latency_status + "\n"
+                + "peer_message_throughput: " + peer_message_throughput_status + "\n"
+                + "transaction_pool_input_throughput: " + transaction_pool_input_throughput_status + "\n"
+                + "tx_delay_end: " + tx_delay_end_status + "\n"
+                + "tx_delay_start: " + tx_delay_start_status + "\n"
+                + "tx_in_block_tps: " + tx_in_block_tps_status + "\n"
+                + "tx_queue_delay: " + tx_queue_delay_status
+            alert('发送并修改开关状态成功');
+        })
+
+    });
+</script>
+
+{% block chart_script %}
+{% endblock %}
+
+{% block board_script %}
+{% endblock %}
+
+</body>
+</html>

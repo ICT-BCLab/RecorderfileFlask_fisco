@@ -1,0 +1,29 @@
+2024-02-21 10:06:55,144 DEBUG - connect 127.0.0.1:20200,as socket <socket.socket fd=5, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=6, laddr=('127.0.0.1', 57638), raddr=('127.0.0.1', 20200)>
+2024-02-21 10:06:55,150 DEBUG - ChannelRecvThread:start thread-->
+2024-02-21 10:06:55,150 DEBUG - ChannelRecvThread channelHandler.ssock.recv begin.
+2024-02-21 10:06:55,150 DEBUG - channelSendThread:start thread-->
+2024-02-21 10:06:55,150 DEBUG - Thread-4:start thread-->
+2024-02-21 10:06:55,150 DEBUG - channelHandler:start thread-->
+2024-02-21 10:06:55,151 DEBUG - channelSendThread send pack len:70,type:0x12,result:0x0,seq:b'e2d9924cd05d11ee9f36a2c0c282b306',data:b'{"jsonrpc": "2.0", "method": "getBlockNumber", "params": [1], "id": 0}'
+2024-02-21 10:06:55,151 DEBUG - channelHandler.ssock.recv len:82
+2024-02-21 10:06:55,152 DEBUG - total bytes to decode 82, datalen 82
+2024-02-21 10:06:55,152 DEBUG - ChannelRecvThread:pack from node, put queue(qsize0),detail len:82,type:0x12,result:0x0,seq:b'e2d9924cd05d11ee9f36a2c0c282b306',data:b'{"id":0,"jsonrpc":"2.0","result":"0x0"}\n'
+2024-02-21 10:06:55,152 DEBUG - ChannelRecvThread channelHandler.ssock.recv begin.
+2024-02-21 10:06:55,152 DEBUG - onResponse, emitter: getResult_b'e2d9924cd05d11ee9f36a2c0c282b306'_18
+2024-02-21 10:06:55,152 DEBUG - response from server , seq: b'e2d9924cd05d11ee9f36a2c0c282b306', type:18
+2024-02-21 10:06:55,152 DEBUG - block notify emitter: onResponse_b'00000000000000000000000000000000'_4097
+2024-02-21 10:06:55,152 INFO - using protocol channel
+2024-02-21 10:06:55,152 DEBUG - channelSendThread send pack len:19,type:0x32,result:0x0,seq:b'e2d9d310d05d11ee9f36a2c0c282b306',data:["_block_notify_1"]
+2024-02-21 10:06:55,152 DEBUG - channelSendThread send pack len:71,type:0x12,result:0x0,seq:b'e2d9d9c8d05d11ee9f36a2c0c282b306',data:b'{"jsonrpc": "2.0", "method": "getClientVersion", "params": [], "id": 1}'
+2024-02-21 10:06:55,153 DEBUG - channelHandler.ssock.recv len:313
+2024-02-21 10:06:55,153 DEBUG - total bytes to decode 313, datalen 313
+2024-02-21 10:06:55,153 DEBUG - ChannelRecvThread:pack from node, put queue(qsize0),detail len:313,type:0x12,result:0x0,seq:b'e2d9d9c8d05d11ee9f36a2c0c282b306',data:b'{"id":1,"jsonrpc":"2.0","result":{"Build Time":"20240117 12:26:27","Build Type":"Darwin/appleclang/RelWithDebInfo","Chain Id":"1","FISCO-BCOS Version":"2.10.1","Git Branch":"main","Git Commit Hash":"a287eb8130dbb37a68da0610aca95e5939878d23","Supported Version":"2.9.1"}}\n'
+2024-02-21 10:06:55,153 DEBUG - ChannelRecvThread channelHandler.ssock.recv begin.
+2024-02-21 10:06:55,153 DEBUG - onResponse, emitter: getResult_b'e2d9d9c8d05d11ee9f36a2c0c282b306'_18
+2024-02-21 10:06:55,153 DEBUG - response from server , seq: b'e2d9d9c8d05d11ee9f36a2c0c282b306', type:18
+2024-02-21 10:06:55,154 INFO - disconnect for read/write error, host: 127.0.0.1, port: 20200
+2024-02-21 10:06:55,154 DEBUG - channelHandler.ssock.recv len:0
+2024-02-21 10:06:55,155 DEBUG - channelHandler:thread finished ,keepWorking = False
+2024-02-21 10:06:55,166 DEBUG - ChannelRecvThread:thread finished ,keepWorking = False
+2024-02-21 10:06:55,357 DEBUG - channelSendThread:thread finished ,keepWorking = False
+2024-02-21 10:06:55,369 DEBUG - Thread-4:thread finished ,keepWorking = False

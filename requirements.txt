@@ -1,0 +1,11 @@
+pandas~=2.0.3
+requests~=2.31.0
+Flask~=2.2.5
+pyecharts~=2.0.5
+bs4~=4.12.2
+openssl~=3.0.13
+six~=1.16.0
+setuptools~=69.5.1
+yaml~=0.2.5
+pyyaml~=6.0.1
+beautifulsoup4~=4.12.2

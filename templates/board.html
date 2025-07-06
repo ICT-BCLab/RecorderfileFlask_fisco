@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+
+{% block board_div %}
+<div class="d-flex flex-row justify-content-around" style="width: 100%">
+
+
+
+</div>
+<!--基本数据-->
+
+<!--区块&交易信息详细汇总-->
+<div class="panel-info d-flex flex-column align-items-center" >
+    <ul class="nav nav-tabs " style="width: 100%">
+        <li class="nav-item" style="background: transparent;">
+            <a class="nav-link {% if active_tab == 'tab1' %}active{% endif %}"
+               href="{{ url_for('index', tab='tab1', page=1) }}">区块情况</a>
+        </li>
+        <li class="nav-item" style="background: transparent;">
+            <a class="nav-link {% if active_tab == 'tab2' %}active{% endif %}"
+               href="{{ url_for('index', tab='tab2', page=1) }}">交易情况</a>
+        </li>
+    </ul>
+
+    {% if active_tab == 'tab1' %}
+    <table class="table table-hover table-borderless ">
+        <thead>
+        <tr>
+            {% for col in data.columns %}
+            <th scope="col">{{ col }}</th>
+            {% endfor %}
+        </tr>
+        </thead>
+        <tbody>
+        {% for index, row in data.iterrows() %}
+        <tr>
+            {% for col in data.columns %}
+            <td>{{ row[col] }}</td>
+            {% endfor %}
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {{ pagination.links }}
+    {% elif active_tab == 'tab2' %}
+    <table class="table table-hover table-borderless ">
+        <thead>
+        <tr>
+            {% for col in data.columns %}
+            <th scope="col">{{ col }}</th>
+            {% endfor %}
+        </tr>
+        </thead>
+        <tbody>
+        {% for index, row in data.iterrows() %}
+        <tr>
+            {% for col in data.columns %}
+            <td>{{ row[col] }}</td>
+            {% endfor %}
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {{ pagination.links }}
+    {% endif %}
+</div>
+
+{% endblock %}
+
+
+{% block board_script %}
+<script>
+    $(function () {
+        // 切换节点
+        $('#node-select').change(function () {
+            var selectedNode = $(this).val();
+            $.ajax({
+                url: '/change_node',
+                type: 'POST',
+                data: {node_key: selectedNode},
+                success: function (response) {
+                    console.log("response", response);
+                    $('#current-node').text('当前节点: ' + response[0]);
+                    $('#current-node-id').text('节点ID: ' + response[1]);
+                }
+            });
+
+            // 修改配置服务器地址
+            let config_server = "127.0.0.1:" + (selectedNode.charAt(selectedNode.length - 1) - '0' + 9530).toString();
+            $.ajax({
+                type: "POST",
+                url: "http://127.0.0.1:5000/changeConfigServer",
+                data: config_server,
+                success: function () {
+                }
+            });
+
+            // 修改记录文件夹路径
+            let filepath = "/Users/bethestar/Downloads/myFiscoBcos/fisco/nodes/127.0.0.1/" + selectedNode + "/log_record";
+            $.ajax({
+                type: "POST",
+                url: "http://127.0.0.1:5000/changeFilepath",
+                data: filepath,
+                success: function (data) {
+                    location.reload();
+                }
+            });
+
+
+        });
+
+        // 查看最新区块信息
+        $('#btn_latest_block').click(function () {
+            $.ajax({
+                url: '/get_latest_block',
+                type: 'POST',
+                success: function (response) {
+                    var modalBody = $('#latestBlockModal .modal-body');
+                    modalBody.empty(); // 清空原有内容
+
+                    // 遍历返回的区块信息，并添加到模态框中
+                    $.each(response, function (key, value) {
+                        modalBody.append('<p><strong>' + key + ':</strong> ' + value + '</p>');
+                    });
+                },
+                error: function (error) {
+                    console.log(error);
+                }
+            });
+        });
+
+        // 四个卡片部分
+        // 获取区块高度、交易大小、交易池TPS
+
+    });
+</script>
+
+{% endblock %}
